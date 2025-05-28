@@ -17,6 +17,11 @@ def run_analysis(filename, model="tiny", prompt="以下是普通话的句子。"
     # 读取列表中的音频文件
     audio_list = os.listdir(f"audio/slice/{filename}")
     print("加载Whisper模型成功！")
+    # 添加排序逻辑
+    audio_files = sorted(
+        audio_list,
+        key=lambda x: int(os.path.splitext(x)[0])  # 按文件名数字排序
+    )
     # 创建outputs文件夹
     os.makedirs("outputs", exist_ok=True)
     print("正在转换文本...")
@@ -24,8 +29,8 @@ def run_analysis(filename, model="tiny", prompt="以下是普通话的句子。"
     audio_list.sort(key=lambda x: int(x.split(".")[0])) # 将 audio_list 按照切片序号排序
 
     i = 1
-    for fn in audio_list:
-        print(f"正在转换第{i}/{len(audio_list)}个音频... {fn}")
+    for fn in audio_files:
+        print(f"正在转换第{i}/{len(audio_files)}个音频... {fn}")
         # 识别音频
         result = whisper_model.transcribe(f"audio/slice/{filename}/{fn}", initial_prompt=prompt)
         print("".join([i["text"] for i in result["segments"] if i is not None]))

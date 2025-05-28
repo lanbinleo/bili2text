@@ -1,4 +1,4 @@
-from downBili import download_video
+from utils import download_video
 from exAudio import *
 from speech2text import *
 
@@ -6,7 +6,7 @@ from speech2text import *
 
 av = input("请输入BV号：")
 filename = download_video(av[2:])
-foldername = run_split(filename)
+foldername = process_audio_split(filename)
 
 
 load_whisper("small")
