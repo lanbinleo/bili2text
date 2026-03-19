@@ -89,7 +89,7 @@ def process_video(bv_number, skip_download=False):
         print("正在转换文本（可能耗时较长）...")
         full_text = speech_to_text.run_analysis_in_memory(
             chunks,
-            prompt=f"以下是普通话的句子。这是一个关于{bv_number}的视频。"
+            prompt="以下是普通话的句子。"
         )
         print("转换完成！")
         output_text.config(state=NORMAL)
@@ -105,7 +105,7 @@ def process_video(bv_number, skip_download=False):
         print("=" * 10)
         print("正在转换文本（可能耗时较长）...")
         speech_to_text.run_analysis(folder_name,
-            prompt="以下是普通话的句子。这是一个关于{}的视频。".format(file_identifier))
+            prompt="以下是普通话的句子。")
         output_path = f"outputs/{folder_name}.txt"
         print("转换完成！", output_path)
         try:
