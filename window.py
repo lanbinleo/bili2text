@@ -110,9 +110,14 @@ def load_whisper_model():
     global speech_to_text
     import speech2text
     speech_to_text = speech2text
-    speech_to_text.load_whisper(model=model_var.get())
+    current_model = model_var.get()
+    speech_to_text.load_whisper(model=current_model)
     msg = "CUDA加速已启用" if is_cuda_available(speech_to_text.whisper) else "使用CPU计算"
-    print("加载Whisper成功！", msg)
+    print(f"加载Whisper成功！模型：{current_model}，{msg}")
+    try:
+        model_status_label.config(text=f"当前模型：{current_model}", foreground="green")
+    except Exception:
+        pass
 
 def open_github_link(event=None):
     webbrowser.open_new("https://github.com/lanbinshijie/bili2text")
@@ -167,35 +172,79 @@ def redirect_system_io():
     sys.stdout = StdoutRedirector()
     sys.stderr = StdoutRedirector()
 
+def select_and_load_whisper():
+    """打开模型选择弹窗，选中后加载"""
+    popup = ttk.Toplevel()
+    popup.title("选择Whisper模型")
+    popup.geometry("360x180")
+    popup.resizable(False, False)
+    popup.update_idletasks()
+    x = (popup.winfo_screenwidth() - popup.winfo_reqwidth()) // 2
+    y = (popup.winfo_screenheight() - popup.winfo_reqheight()) // 2
+    popup.geometry("+%d+%d" % (x, y))
+
+    ttk.Label(popup, text="请选择要加载的模型：", font=("Helvetica", 11)).pack(pady=(18, 10))
+
+    selected_model = ttk.StringVar(value=model_var.get())
+    model_buttons = {}
+
+    def select_model(m):
+        selected_model.set(m)
+        for name, btn in model_buttons.items():
+            btn.config(bootstyle="primary" if name == m else "outline-secondary")
+
+    btn_frame = ttk.Frame(popup)
+    btn_frame.pack()
+    for model_name in ["tiny", "small", "medium", "large"]:
+        style = "primary" if model_name == selected_model.get() else "outline-secondary"
+        btn = ttk.Button(btn_frame, text=model_name, bootstyle=style, width=7,
+                         command=lambda m=model_name: select_model(m))
+        btn.pack(side=LEFT, padx=6)
+        model_buttons[model_name] = btn
+
+    confirmed = [False]
+
+    def on_confirm():
+        confirmed[0] = True
+        popup.destroy()
+
+    ttk.Button(popup, text="加载", bootstyle="success", width=10, command=on_confirm).pack(pady=16)
+
+    popup.wait_window()
+
+    if confirmed[0]:
+        model_var.set(selected_model.get())
+        load_whisper_model()
+
+
 def main():
-    global video_link_entry, log_text, model_var
+    global video_link_entry, log_text, model_var, model_status_label
     app = ttk.Window("Bili2Text - By Lanbin | www.lanbin.top", themename="litera")
     app.geometry("820x540")
     app.iconbitmap("favicon.ico")
     ttk.Label(app, text="Bilibili To Text", font=("Helvetica", 16)).pack(pady=10)
-    
+
     video_link_frame = ttk.Frame(app)
     video_link_entry = ttk.Entry(video_link_frame)
     video_link_entry.pack(side=LEFT, expand=YES, fill=X)
-    load_whisper_button = ttk.Button(video_link_frame, text="加载Whisper", command=load_whisper_model, bootstyle="success-outline")
+    model_status_label = ttk.Label(video_link_frame, text="未加载", foreground="gray")
+    model_status_label.pack(side=RIGHT, padx=(0, 4))
+    load_whisper_button = ttk.Button(video_link_frame, text="加载Whisper", command=select_and_load_whisper, bootstyle="success-outline")
     load_whisper_button.pack(side=RIGHT, padx=5)
     submit_button = ttk.Button(video_link_frame, text="下载视频", command=on_submit_click)
     submit_button.pack(side=RIGHT, padx=5)
     video_link_frame.pack(fill=X, padx=20)
-    
+
     log_text = ttk.ScrolledText(app, height=10, state="disabled")
     log_text.pack(padx=20, pady=10, fill=BOTH, expand=YES)
-    
+
     controls_frame = ttk.Frame(app)
     controls_frame.pack(fill=X, padx=20)
     generate_button = ttk.Button(controls_frame, text="再次生成", command=on_generate_again_click)
     generate_button.pack(side=LEFT, padx=10, pady=10)
 
-    model_var = ttk.StringVar(value="medium")
-    model_combobox = ttk.Combobox(controls_frame, textvariable=model_var, values=["tiny", "small", "medium", "large"])
-    model_combobox.pack(side=LEFT, padx=10, pady=10)
-    model_combobox.set("small")
-    
+    model_var = ttk.StringVar(value="small")
+
     clear_log_button = ttk.Button(controls_frame, text="清空日志", command=on_clear_log_click, bootstyle=DANGER)
     clear_log_button.pack(side=LEFT, padx=10, pady=10)
     
