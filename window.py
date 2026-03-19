@@ -270,13 +270,13 @@ def main():
     ttk.Label(app, text="Bilibili To Text", font=("Helvetica", 16)).pack(pady=10)
 
     input_box = ttk.LabelFrame(app, text="视频生成", padding=10)
-    input_box.pack(fill=X, padx=20, pady=(0, 8))
+    input_box.pack(fill=X, padx=20, pady=(10, 0))
 
     whisper_frame = ttk.Frame(input_box)
-    load_whisper_button = ttk.Button(whisper_frame, text="加载Whisper", command=select_and_load_whisper, bootstyle="success-outline")
-    load_whisper_button.pack(side=LEFT, padx=(0, 8))
-    model_status_label = ttk.Label(whisper_frame, text="未加载", foreground="gray")
+    model_status_label = ttk.Label(whisper_frame, text="模型未加载", foreground="gray")
     model_status_label.pack(side=LEFT)
+    load_whisper_button = ttk.Button(whisper_frame, text="加载Whisper", command=select_and_load_whisper, bootstyle="success-outline")
+    load_whisper_button.pack(side=RIGHT)
     whisper_frame.pack(fill=X, pady=(0, 6))
 
     url_output_frame = ttk.Frame(input_box)
@@ -296,8 +296,8 @@ def main():
     copy_button = ttk.Button(url_output_frame, text="复制结果", command=on_copy_result_click, bootstyle="info-outline", width=10)
     copy_button.grid(row=1, column=1, padx=(8, 0), pady=(8, 0), sticky=N)
 
-    log_box = ttk.LabelFrame(app, text="日志", padding=10)
-    log_box.pack(fill=BOTH, expand=YES, padx=20, pady=(0, 8))
+    log_box = ttk.LabelFrame(app, text="运行日志", padding=10)
+    log_box.pack(fill=BOTH, expand=YES, padx=20, pady=(20, 8))
 
     log_inner = ttk.Frame(log_box)
     log_inner.pack(fill=BOTH, expand=YES)
