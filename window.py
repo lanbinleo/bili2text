@@ -231,31 +231,33 @@ def main():
     app.iconbitmap("favicon.ico")
     ttk.Label(app, text="Bilibili To Text", font=("Helvetica", 16)).pack(pady=10)
 
-    whisper_frame = ttk.Frame(app)
+    input_box = ttk.LabelFrame(app, text="视频生成", padding=10)
+    input_box.pack(fill=X, padx=20, pady=(0, 8))
+
+    whisper_frame = ttk.Frame(input_box)
     load_whisper_button = ttk.Button(whisper_frame, text="加载Whisper", command=select_and_load_whisper, bootstyle="success-outline")
     load_whisper_button.pack(side=LEFT, padx=(0, 8))
     model_status_label = ttk.Label(whisper_frame, text="未加载", foreground="gray")
     model_status_label.pack(side=LEFT)
-    whisper_frame.pack(fill=X, padx=20, pady=(0, 4))
+    whisper_frame.pack(fill=X, pady=(0, 6))
 
-    video_link_frame = ttk.Frame(app)
+    video_link_frame = ttk.Frame(input_box)
     video_link_var = ttk.StringVar()
     video_link_var.trace_add("write", on_url_change)
     video_link_entry = ttk.Entry(video_link_frame, textvariable=video_link_var)
     video_link_entry.pack(side=LEFT, expand=YES, fill=X)
     generate_button = ttk.Button(video_link_frame, text="生成", command=on_generate_click, state=DISABLED)
-    generate_button.pack(side=RIGHT, padx=5)
-    video_link_frame.pack(fill=X, padx=20)
+    generate_button.pack(side=RIGHT, padx=(8, 0))
+    video_link_frame.pack(fill=X)
 
-    ttk.Separator(app, orient=HORIZONTAL).pack(fill=X, padx=20, pady=16)
+    log_box = ttk.LabelFrame(app, text="日志", padding=10)
+    log_box.pack(fill=BOTH, expand=YES, padx=20, pady=(0, 8))
 
-    log_toolbar = ttk.Frame(app)
-    clear_log_button = ttk.Button(log_toolbar, text="清空日志", command=on_clear_log_click, bootstyle=DANGER)
-    clear_log_button.pack(side=RIGHT)
-    log_toolbar.pack(fill=X, padx=20)
+    clear_log_button = ttk.Button(log_box, text="清空日志", command=on_clear_log_click, bootstyle=DANGER)
+    clear_log_button.pack(anchor=E, pady=(0, 4))
 
-    log_text = ttk.ScrolledText(app, height=10, state="disabled")
-    log_text.pack(padx=20, pady=(2, 10), fill=BOTH, expand=YES)
+    log_text = ttk.ScrolledText(log_box, height=10, state="disabled")
+    log_text.pack(fill=BOTH, expand=YES)
 
     model_var = ttk.StringVar(value="small")
     
