@@ -11,6 +11,7 @@ from exAudio import convert_flv_to_mp3, split_mp3, process_audio_split
 
 speech_to_text = None  # 模型实例
 is_generating = False  # 是否正在生成中
+is_model_loading = False  # 是否正在加载模型
 
 def is_cuda_available(whisper):
     return whisper.torch.cuda.is_available()
@@ -63,7 +64,10 @@ def on_url_change(*_):
 
 def on_generate_click():
     global speech_to_text, is_generating
-    if speech_to_text is None:
+    if is_model_loading:
+        print("模型正在加载中，请稍候再试...")
+        return
+    if speech_to_text is None or not hasattr(speech_to_text, 'whisper_model') or speech_to_text.whisper_model is None:
         print("Whisper未加载！请点击加载Whisper按钮。")
         return
     video_link = video_link_entry.get()
@@ -155,17 +159,20 @@ def on_clear_log_click():
             pass
 
 def load_whisper_model():
-    global speech_to_text
-    import speech2text
-    speech_to_text = speech2text
-    current_model = model_var.get()
-    speech_to_text.load_whisper(model=current_model)
-    msg = "CUDA加速已启用" if is_cuda_available(speech_to_text.whisper) else "使用CPU计算"
-    print(f"加载Whisper成功！模型：{current_model}，{msg}")
+    global speech_to_text, is_model_loading
     try:
-        model_status_label.config(text=f"当前模型：{current_model}", foreground="green")
-    except Exception:
-        pass
+        import speech2text
+        speech_to_text = speech2text
+        current_model = model_var.get()
+        speech_to_text.load_whisper(model=current_model)
+        msg = "CUDA加速已启用" if is_cuda_available(speech_to_text.whisper) else "使用CPU计算"
+        print(f"加载Whisper成功！模型：{current_model}，{msg}")
+        try:
+            model_status_label.config(text=f"当前模型：{current_model}", foreground="green")
+        except Exception:
+            pass
+    finally:
+        is_model_loading = False
 
 def open_github_link(event=None):
     webbrowser.open_new("https://github.com/lanbinshijie/bili2text")
@@ -273,6 +280,7 @@ def select_and_load_whisper():
     if confirmed[0]:
         model_var.set(selected_model.get())
         model_status_label.config(text=f"加载 {selected_model.get()} 中...", foreground="orange")
+        is_model_loading = True
         threading.Thread(target=load_whisper_model, daemon=True).start()
 
 
