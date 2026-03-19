@@ -49,6 +49,12 @@ def show_log(text, state="INFO"):
 
 def on_url_change(*_):
     text = video_link_entry.get()
+    if len(text) > 1024:
+        app_instance.after(0, lambda: (
+            video_link_entry.delete(1024, END),
+            print("URL长度超过1024个字符，已自动截断")
+        ))
+        return
     if re.search(r'BV[A-Za-z0-9]+', text):
         generate_button.config(state=NORMAL)
     else:
@@ -74,49 +80,55 @@ def on_generate_click():
     output_text.delete("1.0", END)
     output_text.config(state=DISABLED)
     print(f"BV号: {bv_number}，{'使用本地缓存' if skip_download else '下载视频'}")
+    generate_button.config(state=DISABLED)
     thread = threading.Thread(target=process_video, args=(bv_number, skip_download))
     thread.start()
 
 def process_video(bv_number, skip_download=False):
-    print("=" * 10)
-    if skip_download:
-        print("检测到本地缓存，全程内存处理...")
+    try:
         print("=" * 10)
-        print("正在提取并切割音频...")
-        from exAudio import extract_audio_chunks_in_memory
-        chunks = extract_audio_chunks_in_memory(bv_number)
-        print("=" * 10)
-        print("正在转换文本（可能耗时较长）...")
-        full_text = speech_to_text.run_analysis_in_memory(
-            chunks,
-            prompt="以下是普通话的句子。"
-        )
-        print("转换完成！")
-        output_text.config(state=NORMAL)
-        output_text.delete("1.0", END)
-        output_text.insert(END, full_text)
-        output_text.config(state=DISABLED)
-    else:
-        print("正在下载视频...")
-        file_identifier = download_video(bv_number[2:])
-        print("=" * 10)
-        print("正在分割音频...")
-        folder_name = process_audio_split(file_identifier)
-        print("=" * 10)
-        print("正在转换文本（可能耗时较长）...")
-        speech_to_text.run_analysis(folder_name,
-            prompt="以下是普通话的句子。")
-        output_path = f"outputs/{folder_name}.txt"
-        print("转换完成！", output_path)
-        try:
-            with open(output_path, "r", encoding="utf-8") as f:
-                result = f.read()
+        if skip_download:
+            print("检测到本地缓存，全程内存处理...")
+            print("=" * 10)
+            print("正在提取并切割音频...")
+            from exAudio import extract_audio_chunks_in_memory
+            chunks = extract_audio_chunks_in_memory(bv_number)
+            print("=" * 10)
+            print("正在转换文本（可能耗时较长）...")
+            full_text = speech_to_text.run_analysis_in_memory(
+                chunks,
+                prompt="以下是普通话的句子。"
+            )
+            print("转换完成！")
             output_text.config(state=NORMAL)
             output_text.delete("1.0", END)
-            output_text.insert(END, result)
+            output_text.insert(END, full_text)
             output_text.config(state=DISABLED)
-        except Exception as e:
-            print(f"读取结果失败：{e}")
+        else:
+            print("正在下载视频...")
+            file_identifier = download_video(bv_number[2:])
+            print("=" * 10)
+            print("正在分割音频...")
+            folder_name = process_audio_split(file_identifier)
+            print("=" * 10)
+            print("正在转换文本（可能耗时较长）...")
+            speech_to_text.run_analysis(folder_name,
+                prompt="以下是普通话的句子。")
+            output_path = f"outputs/{folder_name}.txt"
+            print("转换完成！", output_path)
+            try:
+                with open(output_path, "r", encoding="utf-8") as f:
+                    result = f.read()
+                output_text.config(state=NORMAL)
+                output_text.delete("1.0", END)
+                output_text.insert(END, result)
+                output_text.config(state=DISABLED)
+            except Exception as e:
+                print(f"读取结果失败：{e}")
+    except Exception as e:
+        print(f"生成失败：{e}")
+    finally:
+        generate_button.config(state=NORMAL)
 
 
 def on_clear_log_click():
@@ -265,6 +277,8 @@ def main():
     global video_link_entry, log_text, output_text, model_var, model_status_label, generate_button, app_instance
     app = ttk.Window("Bili2Text - By Lanbin | www.lanbin.top", themename="litera")
     app_instance = app
+    app.style.configure("TEntry", insertcolor="#212529",
+                         selectbackground="#0d6efd", selectforeground="white")
     app.geometry("820x540")
     app.iconbitmap("favicon.ico")
     ttk.Label(app, text="Bilibili To Text", font=("Helvetica", 16)).pack(pady=10)
@@ -287,6 +301,8 @@ def main():
     video_link_var.trace_add("write", on_url_change)
     video_link_entry = ttk.Entry(url_output_frame, textvariable=video_link_var)
     video_link_entry.grid(row=0, column=0, sticky=EW)
+    video_link_entry.bind("<Return>", lambda e: on_generate_click() if generate_button["state"] != DISABLED else None)
+    video_link_entry.bind("<Control-a>", lambda e: video_link_entry.select_range(0, END) or "break")
     generate_button = ttk.Button(url_output_frame, text="生成", command=on_generate_click, state=DISABLED, width=10)
     generate_button.grid(row=0, column=1, padx=(8, 0), sticky=EW)
 
