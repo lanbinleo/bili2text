@@ -296,6 +296,19 @@ def main():
     copy_button = ttk.Button(url_output_frame, text="复制结果", command=on_copy_result_click, bootstyle="info-outline", width=10)
     copy_button.grid(row=1, column=1, padx=(8, 0), pady=(8, 0), sticky=N)
 
+    model_var = ttk.StringVar(value="small")
+
+    footer_frame = ttk.Frame(app)
+    footer_frame.pack(side=BOTTOM, fill=X)
+    author_label = ttk.Label(footer_frame, text="作者：Lanbin")
+    author_label.pack(side=LEFT, padx=10, pady=10)
+    version_var = ttk.StringVar(value="2.0.0")
+    version_label = ttk.Label(footer_frame, text="版本 " + version_var.get(), foreground="gray")
+    version_label.pack(side=LEFT, padx=10, pady=10)
+    github_link = ttk.Label(footer_frame, text="开源仓库", cursor="hand2", bootstyle=PRIMARY)
+    github_link.pack(side=LEFT, padx=10, pady=10)
+    github_link.bind("<Button-1>", open_github_link)
+
     log_box = ttk.LabelFrame(app, text="运行日志", padding=10)
     log_box.pack(fill=BOTH, expand=YES, padx=20, pady=(20, 8))
 
@@ -308,19 +321,6 @@ def main():
     log_text.grid(row=0, column=0, sticky=NSEW)
     clear_log_button = ttk.Button(log_inner, text="清空日志", command=on_clear_log_click, bootstyle=DANGER, width=10)
     clear_log_button.grid(row=0, column=1, padx=(8, 0), sticky=N)
-
-    model_var = ttk.StringVar(value="small")
-    
-    footer_frame = ttk.Frame(app)
-    footer_frame.pack(side=BOTTOM, fill=X)
-    author_label = ttk.Label(footer_frame, text="作者：Lanbin")
-    author_label.pack(side=LEFT, padx=10, pady=10)
-    version_var = ttk.StringVar(value="2.0.0")
-    version_label = ttk.Label(footer_frame, text="版本 " + version_var.get(), foreground="gray")
-    version_label.pack(side=LEFT, padx=10, pady=10)
-    github_link = ttk.Label(footer_frame, text="开源仓库", cursor="hand2", bootstyle=PRIMARY)
-    github_link.pack(side=LEFT, padx=10, pady=10)
-    github_link.bind("<Button-1>", open_github_link)
     
     redirect_system_io()
     app.mainloop()
