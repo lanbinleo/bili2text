@@ -106,19 +106,6 @@ def on_clear_log_click():
             # 避免在清空日志时抛出异常导致界面卡住
             pass
 
-def on_show_result_click():
-    print("这里是结果...")
-
-def on_select_model():
-    selected_model = model_var.get()
-    print(f"选中的模型: {selected_model}")
-    print("请点击加载Whisper按钮加载模型！")
-
-def on_confirm_model_click():
-    selected_model = model_var.get()
-    print(f"确认的模型: {selected_model}")
-    print("请点击加载Whisper按钮加载模型！")
-
 def load_whisper_model():
     global speech_to_text
     import speech2text
@@ -203,16 +190,11 @@ def main():
     controls_frame.pack(fill=X, padx=20)
     generate_button = ttk.Button(controls_frame, text="再次生成", command=on_generate_again_click)
     generate_button.pack(side=LEFT, padx=10, pady=10)
-    show_result_button = ttk.Button(controls_frame, text="展示结果", command=on_show_result_click, bootstyle="success-outline")
-    show_result_button.pack(side=LEFT, padx=10, pady=10)
-    
+
     model_var = ttk.StringVar(value="medium")
     model_combobox = ttk.Combobox(controls_frame, textvariable=model_var, values=["tiny", "small", "medium", "large"])
     model_combobox.pack(side=LEFT, padx=10, pady=10)
     model_combobox.set("small")
-    
-    confirm_model_button = ttk.Button(controls_frame, text="确认模型", command=on_confirm_model_click, bootstyle="primary-outline")
-    confirm_model_button.pack(side=LEFT, padx=10, pady=10)
     
     clear_log_button = ttk.Button(controls_frame, text="清空日志", command=on_clear_log_click, bootstyle=DANGER)
     clear_log_button.pack(side=LEFT, padx=10, pady=10)

@@ -176,3 +176,6 @@ outputs/
 
 # Executable files
 *.exe
+
+# Claude Code
+.claude/
