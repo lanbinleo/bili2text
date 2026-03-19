@@ -42,7 +42,7 @@ def convert_flv_to_mp3(name, target_name=None, folder='bilibili_video'):
     output_name = target_name if target_name else name
     audio.write_audiofile(f"audio/conv/{output_name}.mp3")
 
-def split_mp3(filename, folder_name, slice_length=30000, target_folder="audio/slice"):
+def split_mp3(filename, folder_name, slice_length=45000, target_folder="audio/slice"):
     audio = AudioSegment.from_mp3(filename)
     total_slices = (len(audio)+ slice_length - 1) // slice_length
     target_dir = os.path.join(target_folder, folder_name)
@@ -66,7 +66,7 @@ def process_audio_split(name):
     return folder_name
 
 
-def extract_audio_chunks_in_memory(name, slice_length_ms=30000, folder='bilibili_video'):
+def extract_audio_chunks_in_memory(name, slice_length_ms=45000, folder='bilibili_video'):
     """从视频直接提取音频并切割，全程在内存中完成，返回 whisper 可用的 float32 numpy 数组列表。"""
     input_path = f'{folder}/{name}.mp4'
     if not os.path.exists(input_path):
