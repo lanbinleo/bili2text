@@ -224,32 +224,33 @@ def main():
     app.iconbitmap("favicon.ico")
     ttk.Label(app, text="Bilibili To Text", font=("Helvetica", 16)).pack(pady=10)
 
-    video_link_frame = ttk.Frame(app)
-    video_link_entry = ttk.Entry(video_link_frame)
-    video_link_entry.pack(side=LEFT, expand=YES, fill=X)
-    submit_button = ttk.Button(video_link_frame, text="下载视频", command=on_submit_click)
-    submit_button.pack(side=RIGHT, padx=5)
-    video_link_frame.pack(fill=X, padx=20)
-
     whisper_frame = ttk.Frame(app)
     load_whisper_button = ttk.Button(whisper_frame, text="加载Whisper", command=select_and_load_whisper, bootstyle="success-outline")
     load_whisper_button.pack(side=LEFT, padx=(0, 8))
     model_status_label = ttk.Label(whisper_frame, text="未加载", foreground="gray")
     model_status_label.pack(side=LEFT)
-    whisper_frame.pack(fill=X, padx=20, pady=(4, 0))
+    whisper_frame.pack(fill=X, padx=20, pady=(0, 4))
+
+    video_link_frame = ttk.Frame(app)
+    video_link_entry = ttk.Entry(video_link_frame)
+    video_link_entry.pack(side=LEFT, expand=YES, fill=X)
+    generate_button = ttk.Button(video_link_frame, text="再次生成", command=on_generate_again_click)
+    generate_button.pack(side=RIGHT, padx=5)
+    submit_button = ttk.Button(video_link_frame, text="下载视频", command=on_submit_click)
+    submit_button.pack(side=RIGHT, padx=5)
+    video_link_frame.pack(fill=X, padx=20)
+
+    ttk.Separator(app, orient=HORIZONTAL).pack(fill=X, padx=20, pady=16)
+
+    log_toolbar = ttk.Frame(app)
+    clear_log_button = ttk.Button(log_toolbar, text="清空日志", command=on_clear_log_click, bootstyle=DANGER)
+    clear_log_button.pack(side=RIGHT)
+    log_toolbar.pack(fill=X, padx=20)
 
     log_text = ttk.ScrolledText(app, height=10, state="disabled")
-    log_text.pack(padx=20, pady=10, fill=BOTH, expand=YES)
-
-    controls_frame = ttk.Frame(app)
-    controls_frame.pack(fill=X, padx=20)
-    generate_button = ttk.Button(controls_frame, text="再次生成", command=on_generate_again_click)
-    generate_button.pack(side=LEFT, padx=10, pady=10)
+    log_text.pack(padx=20, pady=(2, 10), fill=BOTH, expand=YES)
 
     model_var = ttk.StringVar(value="small")
-
-    clear_log_button = ttk.Button(controls_frame, text="清空日志", command=on_clear_log_click, bootstyle=DANGER)
-    clear_log_button.pack(side=LEFT, padx=10, pady=10)
     
     footer_frame = ttk.Frame(app)
     footer_frame.pack(side=BOTTOM, fill=X)
