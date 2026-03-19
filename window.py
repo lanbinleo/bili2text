@@ -2,6 +2,8 @@ import ttkbootstrap as ttk
 from ttkbootstrap.constants import *
 import webbrowser
 import re
+import os
+import glob as _glob
 import sys
 import threading
 from utils import download_video
@@ -45,46 +47,51 @@ def show_log(text, state="INFO"):
     log_text.insert(END, f"[LOG][{state}] {text}\n")
     log_text.config(state="disabled")
 
-def on_submit_click():
+def on_url_change(*_):
+    text = video_link_entry.get()
+    if re.search(r'BV[A-Za-z0-9]+', text):
+        generate_button.config(state=NORMAL)
+    else:
+        generate_button.config(state=DISABLED)
+
+def on_generate_click():
     global speech_to_text
     if speech_to_text is None:
         print("Whisper未加载！请点击加载Whisper按钮。")
         return
     video_link = video_link_entry.get()
-    if not video_link:
-        print("视频链接不能为空！")
-        return
-    if open_popup("是否确定生成？可能耗费时间较长", title="提示") == "cancelled":
-        return
-    # 提取BV号
-    pattern = r'BV[A-Za-z0-9]+'
-    matches = re.findall(pattern, video_link)
-    if not matches:
-        print("无效的视频链接！")
-        return
+    matches = re.findall(r'BV[A-Za-z0-9]+', video_link)
     bv_number = matches[0]
-    print(f"视频链接: {video_link}, BV号: {bv_number}")
-    thread = threading.Thread(target=process_video, args=(bv_number[2:],))
+    video_files = _glob.glob(f"bilibili_video/{bv_number}/*.mp4")
+    skip_download = len(video_files) > 0
+    if skip_download:
+        msg = f"检测到本地缓存（{bv_number}），直接生成文本？"
+    else:
+        msg = "是否确定生成？需要先下载视频，可能耗费时间较长"
+    if open_popup(msg, title="提示") == "cancelled":
+        return
+    print(f"BV号: {bv_number}，{'使用本地缓存' if skip_download else '下载视频'}")
+    thread = threading.Thread(target=process_video, args=(bv_number, skip_download))
     thread.start()
 
-def process_video(av_number):
+def process_video(bv_number, skip_download=False):
     print("=" * 10)
-    print("正在下载视频...")
-    file_identifier = download_video(str(av_number))
+    if skip_download:
+        print(f"检测到本地缓存，跳过下载...")
+        file_identifier = bv_number
+    else:
+        print("正在下载视频...")
+        file_identifier = download_video(bv_number[2:])  # download_video 接受不带 BV 前缀的号
     print("=" * 10)
     print("正在分割音频...")
-    # 使用音频模块处理
     folder_name = process_audio_split(file_identifier)
     print("=" * 10)
     print("正在转换文本（可能耗时较长）...")
-    speech_to_text.run_analysis(folder_name, 
+    speech_to_text.run_analysis(folder_name,
         prompt="以下是普通话的句子。这是一个关于{}的视频。".format(file_identifier))
     output_path = f"outputs/{folder_name}.txt"
     print("转换完成！", output_path)
 
-def on_generate_again_click():
-    print("再次生成...")
-    print(open_popup("是否再次生成？"))
 
 def on_clear_log_click():
     # 临时恢复原始 stdout/stderr，避免清空期间的输出被重定向回 log_text
@@ -218,7 +225,7 @@ def select_and_load_whisper():
 
 
 def main():
-    global video_link_entry, log_text, model_var, model_status_label
+    global video_link_entry, log_text, model_var, model_status_label, generate_button
     app = ttk.Window("Bili2Text - By Lanbin | www.lanbin.top", themename="litera")
     app.geometry("820x540")
     app.iconbitmap("favicon.ico")
@@ -232,12 +239,12 @@ def main():
     whisper_frame.pack(fill=X, padx=20, pady=(0, 4))
 
     video_link_frame = ttk.Frame(app)
-    video_link_entry = ttk.Entry(video_link_frame)
+    video_link_var = ttk.StringVar()
+    video_link_var.trace_add("write", on_url_change)
+    video_link_entry = ttk.Entry(video_link_frame, textvariable=video_link_var)
     video_link_entry.pack(side=LEFT, expand=YES, fill=X)
-    generate_button = ttk.Button(video_link_frame, text="再次生成", command=on_generate_again_click)
+    generate_button = ttk.Button(video_link_frame, text="生成", command=on_generate_click, state=DISABLED)
     generate_button.pack(side=RIGHT, padx=5)
-    submit_button = ttk.Button(video_link_frame, text="下载视频", command=on_submit_click)
-    submit_button.pack(side=RIGHT, padx=5)
     video_link_frame.pack(fill=X, padx=20)
 
     ttk.Separator(app, orient=HORIZONTAL).pack(fill=X, padx=20, pady=16)
