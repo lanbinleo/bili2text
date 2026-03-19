@@ -11,8 +11,20 @@ def load_whisper(model="tiny"):
     whisper_model = whisper.load_model(model, device="cuda" if is_cuda_available() else "cpu")
     print("Whisper模型："+model)
 
-def run_analysis(filename, model="tiny", prompt="以下是普通话的句子。"):
+def run_analysis_in_memory(chunks, prompt="以下是普通话的句子。"):
+    """直接接收 numpy 数组列表进行转录，返回完整文本字符串，不读写任何文件。"""
     global whisper_model
+    full_text = []
+    total = len(chunks)
+    for i, chunk in enumerate(chunks, 1):
+        print(f"正在转换第{i}/{total}个音频...")
+        result = whisper_model.transcribe(chunk, initial_prompt=prompt)
+        text = "".join([s["text"] for s in result["segments"] if s])
+        print(text)
+        full_text.append(text)
+    return "\n".join(full_text)
+
+def run_analysis(filename, model="tiny", prompt="以下是普通话的句子。"):
     print("正在加载Whisper模型...")
     # 读取列表中的音频文件
     audio_list = os.listdir(f"audio/slice/{filename}")

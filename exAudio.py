@@ -1,5 +1,6 @@
 from moviepy.editor import VideoFileClip
 from pydub import AudioSegment
+import numpy as np
 import os
 import time
 import subprocess
@@ -63,4 +64,37 @@ def process_audio_split(name):
         raise FileNotFoundError(f"转换后的音频文件不存在: {conv_path}")
     split_mp3(conv_path, folder_name)
     return folder_name
+
+
+def extract_audio_chunks_in_memory(name, slice_length_ms=45000, folder='bilibili_video'):
+    """从视频直接提取音频并切割，全程在内存中完成，返回 whisper 可用的 float32 numpy 数组列表。"""
+    input_path = f'{folder}/{name}.mp4'
+    if not os.path.exists(input_path):
+        dir_path = f'{folder}/{name}'
+        if os.path.isdir(dir_path):
+            for file in os.listdir(dir_path):
+                if file.endswith(('.mp4', '.flv', '.mkv', '.avi')):
+                    input_path = os.path.join(dir_path, file)
+                    break
+            else:
+                raise FileNotFoundError(f"目录下未找到视频文件: {dir_path}")
+        else:
+            raise FileNotFoundError(f"视频文件不存在: {input_path}")
+
+    if not check_video_integrity(input_path):
+        raise ValueError(f"视频文件损坏: {input_path}")
+
+    print("从视频提取音频（内存模式）...")
+    audio = AudioSegment.from_file(input_path)
+
+    total = (len(audio) + slice_length_ms - 1) // slice_length_ms
+    chunks = []
+    for i, start in enumerate(range(0, len(audio), slice_length_ms)):
+        chunk = audio[start:start + slice_length_ms]
+        chunk = chunk.set_channels(1).set_frame_rate(16000)
+        samples = np.frombuffer(chunk.raw_data, dtype=np.int16)
+        chunks.append(samples.astype(np.float32) / 32768.0)
+        print(f"音频切割 {i + 1}/{total}")
+
+    return chunks
 

@@ -80,29 +80,43 @@ def on_generate_click():
 def process_video(bv_number, skip_download=False):
     print("=" * 10)
     if skip_download:
-        print(f"检测到本地缓存，跳过下载...")
-        file_identifier = bv_number
-    else:
-        print("正在下载视频...")
-        file_identifier = download_video(bv_number[2:])  # download_video 接受不带 BV 前缀的号
-    print("=" * 10)
-    print("正在分割音频...")
-    folder_name = process_audio_split(file_identifier)
-    print("=" * 10)
-    print("正在转换文本（可能耗时较长）...")
-    speech_to_text.run_analysis(folder_name,
-        prompt="以下是普通话的句子。这是一个关于{}的视频。".format(file_identifier))
-    output_path = f"outputs/{folder_name}.txt"
-    print("转换完成！", output_path)
-    try:
-        with open(output_path, "r", encoding="utf-8") as f:
-            result = f.read()
+        print("检测到本地缓存，全程内存处理...")
+        print("=" * 10)
+        print("正在提取并切割音频...")
+        from exAudio import extract_audio_chunks_in_memory
+        chunks = extract_audio_chunks_in_memory(bv_number)
+        print("=" * 10)
+        print("正在转换文本（可能耗时较长）...")
+        full_text = speech_to_text.run_analysis_in_memory(
+            chunks,
+            prompt=f"以下是普通话的句子。这是一个关于{bv_number}的视频。"
+        )
+        print("转换完成！")
         output_text.config(state=NORMAL)
         output_text.delete("1.0", END)
-        output_text.insert(END, result)
+        output_text.insert(END, full_text)
         output_text.config(state=DISABLED)
-    except Exception as e:
-        print(f"读取结果失败：{e}")
+    else:
+        print("正在下载视频...")
+        file_identifier = download_video(bv_number[2:])
+        print("=" * 10)
+        print("正在分割音频...")
+        folder_name = process_audio_split(file_identifier)
+        print("=" * 10)
+        print("正在转换文本（可能耗时较长）...")
+        speech_to_text.run_analysis(folder_name,
+            prompt="以下是普通话的句子。这是一个关于{}的视频。".format(file_identifier))
+        output_path = f"outputs/{folder_name}.txt"
+        print("转换完成！", output_path)
+        try:
+            with open(output_path, "r", encoding="utf-8") as f:
+                result = f.read()
+            output_text.config(state=NORMAL)
+            output_text.delete("1.0", END)
+            output_text.insert(END, result)
+            output_text.config(state=DISABLED)
+        except Exception as e:
+            print(f"读取结果失败：{e}")
 
 
 def on_clear_log_click():
