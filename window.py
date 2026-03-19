@@ -70,6 +70,9 @@ def on_generate_click():
         msg = "是否确定生成？需要先下载视频，可能耗费时间较长"
     if open_popup(msg, title="提示") == "cancelled":
         return
+    output_text.config(state=NORMAL)
+    output_text.delete("1.0", END)
+    output_text.config(state=DISABLED)
     print(f"BV号: {bv_number}，{'使用本地缓存' if skip_download else '下载视频'}")
     thread = threading.Thread(target=process_video, args=(bv_number, skip_download))
     thread.start()
@@ -240,7 +243,8 @@ def select_and_load_whisper():
 
     if confirmed[0]:
         model_var.set(selected_model.get())
-        load_whisper_model()
+        model_status_label.config(text=f"加载 {selected_model.get()} 中...", foreground="orange")
+        threading.Thread(target=load_whisper_model, daemon=True).start()
 
 
 def main():
