@@ -91,6 +91,15 @@ def process_video(bv_number, skip_download=False):
         prompt="以下是普通话的句子。这是一个关于{}的视频。".format(file_identifier))
     output_path = f"outputs/{folder_name}.txt"
     print("转换完成！", output_path)
+    try:
+        with open(output_path, "r", encoding="utf-8") as f:
+            result = f.read()
+        output_text.config(state=NORMAL)
+        output_text.delete("1.0", END)
+        output_text.insert(END, result)
+        output_text.config(state=DISABLED)
+    except Exception as e:
+        print(f"读取结果失败：{e}")
 
 
 def on_clear_log_click():
@@ -179,6 +188,16 @@ def redirect_system_io():
     sys.stdout = StdoutRedirector()
     sys.stderr = StdoutRedirector()
 
+def on_copy_result_click():
+    content = output_text.get("1.0", END).strip()
+    if content:
+        app_instance.clipboard_clear()
+        app_instance.clipboard_append(content)
+        print("已复制到剪贴板")
+    else:
+        print("输出框为空，无内容可复制")
+
+
 def select_and_load_whisper():
     """打开模型选择弹窗，选中后加载"""
     popup = ttk.Toplevel()
@@ -225,8 +244,9 @@ def select_and_load_whisper():
 
 
 def main():
-    global video_link_entry, log_text, model_var, model_status_label, generate_button
+    global video_link_entry, log_text, output_text, model_var, model_status_label, generate_button, app_instance
     app = ttk.Window("Bili2Text - By Lanbin | www.lanbin.top", themename="litera")
+    app_instance = app
     app.geometry("820x540")
     app.iconbitmap("favicon.ico")
     ttk.Label(app, text="Bilibili To Text", font=("Helvetica", 16)).pack(pady=10)
@@ -241,23 +261,35 @@ def main():
     model_status_label.pack(side=LEFT)
     whisper_frame.pack(fill=X, pady=(0, 6))
 
-    video_link_frame = ttk.Frame(input_box)
+    url_output_frame = ttk.Frame(input_box)
+    url_output_frame.pack(fill=BOTH, expand=YES)
+    url_output_frame.columnconfigure(0, weight=1)
+
     video_link_var = ttk.StringVar()
     video_link_var.trace_add("write", on_url_change)
-    video_link_entry = ttk.Entry(video_link_frame, textvariable=video_link_var)
-    video_link_entry.pack(side=LEFT, expand=YES, fill=X)
-    generate_button = ttk.Button(video_link_frame, text="生成", command=on_generate_click, state=DISABLED)
-    generate_button.pack(side=RIGHT, padx=(8, 0))
-    video_link_frame.pack(fill=X)
+    video_link_entry = ttk.Entry(url_output_frame, textvariable=video_link_var)
+    video_link_entry.grid(row=0, column=0, sticky=EW)
+    generate_button = ttk.Button(url_output_frame, text="生成", command=on_generate_click, state=DISABLED, width=10)
+    generate_button.grid(row=0, column=1, padx=(8, 0), sticky=EW)
+
+    output_text = ttk.ScrolledText(url_output_frame, height=6, state=DISABLED, wrap=WORD)
+    output_text.grid(row=1, column=0, sticky=NSEW, pady=(8, 0))
+    url_output_frame.rowconfigure(1, weight=1)
+    copy_button = ttk.Button(url_output_frame, text="复制结果", command=on_copy_result_click, bootstyle="info-outline", width=10)
+    copy_button.grid(row=1, column=1, padx=(8, 0), pady=(8, 0), sticky=N)
 
     log_box = ttk.LabelFrame(app, text="日志", padding=10)
     log_box.pack(fill=BOTH, expand=YES, padx=20, pady=(0, 8))
 
-    clear_log_button = ttk.Button(log_box, text="清空日志", command=on_clear_log_click, bootstyle=DANGER)
-    clear_log_button.pack(anchor=E, pady=(0, 4))
+    log_inner = ttk.Frame(log_box)
+    log_inner.pack(fill=BOTH, expand=YES)
+    log_inner.columnconfigure(0, weight=1)
+    log_inner.rowconfigure(0, weight=1)
 
-    log_text = ttk.ScrolledText(log_box, height=10, state="disabled")
-    log_text.pack(fill=BOTH, expand=YES)
+    log_text = ttk.ScrolledText(log_inner, height=10, state="disabled")
+    log_text.grid(row=0, column=0, sticky=NSEW)
+    clear_log_button = ttk.Button(log_inner, text="清空日志", command=on_clear_log_click, bootstyle=DANGER, width=10)
+    clear_log_button.grid(row=0, column=1, padx=(8, 0), sticky=N)
 
     model_var = ttk.StringVar(value="small")
     
