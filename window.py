@@ -10,6 +10,7 @@ from utils import download_video
 from exAudio import convert_flv_to_mp3, split_mp3, process_audio_split
 
 speech_to_text = None  # 模型实例
+is_generating = False  # 是否正在生成中
 
 def is_cuda_available(whisper):
     return whisper.torch.cuda.is_available()
@@ -61,7 +62,7 @@ def on_url_change(*_):
         generate_button.config(state=DISABLED)
 
 def on_generate_click():
-    global speech_to_text
+    global speech_to_text, is_generating
     if speech_to_text is None:
         print("Whisper未加载！请点击加载Whisper按钮。")
         return
@@ -80,6 +81,7 @@ def on_generate_click():
     output_text.delete("1.0", END)
     output_text.config(state=DISABLED)
     print(f"BV号: {bv_number}，{'使用本地缓存' if skip_download else '下载视频'}")
+    is_generating = True
     generate_button.config(state=DISABLED)
     thread = threading.Thread(target=process_video, args=(bv_number, skip_download))
     thread.start()
@@ -128,6 +130,7 @@ def process_video(bv_number, skip_download=False):
     except Exception as e:
         print(f"生成失败：{e}")
     finally:
+        is_generating = False
         generate_button.config(state=NORMAL)
 
 
@@ -301,7 +304,7 @@ def main():
     video_link_var.trace_add("write", on_url_change)
     video_link_entry = ttk.Entry(url_output_frame, textvariable=video_link_var)
     video_link_entry.grid(row=0, column=0, sticky=EW)
-    video_link_entry.bind("<Return>", lambda e: on_generate_click() if generate_button["state"] != DISABLED else None)
+    video_link_entry.bind("<Return>", lambda e: on_generate_click() if not is_generating and generate_button["state"] != DISABLED else None)
     video_link_entry.bind("<Control-a>", lambda e: video_link_entry.select_range(0, END) or "break")
     generate_button = ttk.Button(url_output_frame, text="生成", command=on_generate_click, state=DISABLED, width=10)
     generate_button.grid(row=0, column=1, padx=(8, 0), sticky=EW)
