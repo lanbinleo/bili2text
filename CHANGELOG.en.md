@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Batch Transcription
+
+- added `bili2text batch` for submitting multiple inputs from arguments or a text file
+- added multiline batch submission to the web UI and API
+- added multiline batch processing to the desktop window
+
 ## 2026-04-10 (v0.3.0)
 
 ### Version Cleanup

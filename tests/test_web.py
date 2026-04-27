@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -17,8 +18,9 @@ class FakePipeline:
         self.model = model
 
     def transcribe(self, source: str, *, prompt: str | None = None, output: Path | None = None, progress=None) -> TranscriptResult:
-        transcript_path = self.settings.transcripts_original_dir / "demo.txt"
-        metadata_path = self.settings.metadata_dir / "demo.json"
+        source_id = hashlib.sha1(source.encode("utf-8")).hexdigest()[:12]
+        transcript_path = self.settings.transcripts_original_dir / f"demo-{source_id}.txt"
+        metadata_path = self.settings.metadata_dir / f"demo-{source_id}.json"
         transcript_path.write_text("demo text\n", encoding="utf-8")
         metadata_path.write_text("{}", encoding="utf-8")
         if progress is not None:
@@ -102,6 +104,57 @@ def test_api_transcribe_returns_task_and_video_can_be_edited(tmp_path: Path) -> 
 
     transcript_after = client.get(f"/api/videos/{task.video_id}/transcript")
     assert transcript_after.json()["text"] == "edited text\n"
+
+
+def test_api_batch_transcribe_returns_multiple_tasks(tmp_path: Path) -> None:
+    app, service, _, _ = build_test_app(tmp_path)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/tasks/batch",
+        json={
+            "source_text": "\n".join(
+                [
+                    "https://www.bilibili.com/video/BV1xx411c7XD",
+                    "BV1yy411c7XD",
+                ]
+            ),
+            "provider": "sensevoice",
+            "model": "tiny",
+            "prompt": "",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["count"] == 2
+    assert len(payload["items"]) == 2
+
+    for item in payload["items"]:
+        task = service.wait_for_task(item["id"])
+        assert task.status == "completed"
+
+
+def test_form_batch_transcribe_renders_batch_page(tmp_path: Path) -> None:
+    app, service, _, _ = build_test_app(tmp_path)
+    client = TestClient(app)
+
+    response = client.post(
+        "/transcribe",
+        data={
+            "source": "BV1xx411c7XD\nBV1yy411c7XD",
+            "provider": "whisper",
+            "model": "small",
+            "prompt": "",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "已提交 2 个任务" in response.text
+    assert "BV1xx411c7XD" in response.text
+    assert "BV1yy411c7XD" in response.text
+    for task in service.list_tasks():
+        service.wait_for_task(task.id)
 
 
 def test_api_supports_categories_tags_and_versions(tmp_path: Path) -> None:

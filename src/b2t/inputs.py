@@ -53,6 +53,17 @@ def parse_source(raw_input: str) -> SourceRef:
     raise ValueError("source must be a BV id, a Bilibili URL, or an existing local audio/video file")
 
 
+def parse_source_list(raw_input: str) -> list[str]:
+    sources = [
+        line.strip()
+        for line in raw_input.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if not sources:
+        raise ValueError("source list cannot be empty")
+    return sources
+
+
 def safe_stem(value: str) -> str:
     stem = re.sub(r"[^\w.-]+", "-", value, flags=re.UNICODE).strip("-._")
     return stem or "b2t-output"

@@ -74,7 +74,39 @@ SQLite 只负责索引和管理状态，不是唯一数据源。
 }
 ```
 
-### 2. 查询任务列表
+### 2. 批量创建转写任务
+
+`POST /api/tasks/batch`
+
+请求体可以传 `sources` 数组，也可以传 `source_text` 多行文本：
+
+```json
+{
+  "source_text": "BV1xx411c7XD\nhttps://www.bilibili.com/video/BV1yy411c7XD",
+  "provider": "whisper",
+  "model": "small",
+  "prompt": ""
+}
+```
+
+响应：
+
+```json
+{
+  "items": [
+    {
+      "id": "8f7d...",
+      "status": "queued",
+      "source_input": "BV1xx411c7XD"
+    }
+  ],
+  "count": 2
+}
+```
+
+返回的每个任务都可以继续用单任务进度接口轮询。
+
+### 3. 查询任务列表
 
 `GET /api/tasks`
 
@@ -117,13 +149,13 @@ SQLite 只负责索引和管理状态，不是唯一数据源。
 }
 ```
 
-### 3. 查询单个任务
+### 4. 查询单个任务
 
 `GET /api/tasks/{task_id}`
 
 返回单个任务对象。
 
-### 4. 查询任务当前进度
+### 5. 查询任务当前进度
 
 `GET /api/tasks/{task_id}/progress`
 
@@ -134,7 +166,7 @@ SQLite 只负责索引和管理状态，不是唯一数据源。
 - 任务运行中: `1000ms`
 - 任务完成或失败: 停止轮询
 
-### 5. 查询任务事件流
+### 6. 查询任务事件流
 
 `GET /api/tasks/{task_id}/events`
 

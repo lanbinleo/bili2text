@@ -10,6 +10,7 @@ from tkinter import filedialog, messagebox, ttk
 from typing import Callable
 
 from b2t.i18n import tr
+from b2t.inputs import parse_source_list
 from b2t.models import TranscriptResult
 from b2t.pipeline import B2TPipeline
 
@@ -35,7 +36,6 @@ class WindowApp:
         self.root.geometry("980x700")
         self.root.minsize(840, 620)
 
-        self.source_var = tk.StringVar()
         self.provider_var = tk.StringVar(value=default_provider)
         self.model_var = tk.StringVar(value=default_model)
         self.workspace_var = tk.StringVar(value=str(default_workspace or Path(".b2t").resolve()))
@@ -57,9 +57,8 @@ class WindowApp:
         top.columnconfigure(3, weight=1)
 
         ttk.Label(top, text=tr(self.language, "window_source")).grid(row=0, column=0, sticky="w")
-        source_entry = ttk.Entry(top, textvariable=self.source_var)
-        source_entry.grid(row=0, column=1, columnspan=3, sticky="ew", padx=(8, 8))
-        source_entry.bind("<Return>", lambda _event: self.start_transcribe())
+        self.source_text = tk.Text(top, height=3, wrap="word")
+        self.source_text.grid(row=0, column=1, columnspan=3, sticky="ew", padx=(8, 8))
 
         ttk.Button(top, text=tr(self.language, "window_choose_file"), command=self._choose_file).grid(row=0, column=4, sticky="ew")
 
@@ -137,8 +136,10 @@ class WindowApp:
         if self.is_running:
             return
 
-        source = self.source_var.get().strip()
-        if not source:
+        source_text = self.source_text.get("1.0", "end").strip()
+        try:
+            sources = parse_source_list(source_text)
+        except ValueError:
             messagebox.showwarning("bili2text", tr(self.language, "window_missing_source"))
             return
 
@@ -152,29 +153,40 @@ class WindowApp:
         self.transcribe_button.state(["disabled"])
         self.status_var.set(tr(self.language, "window_status_running"))
         self._append_log(tr(self.language, "window_starting", provider=provider, model=model))
+        if len(sources) > 1:
+            self._append_log(tr(self.language, "window_batch_submitted", count=len(sources)))
 
         thread = threading.Thread(
             target=self._run_pipeline,
-            args=(source, provider, model, workspace, prompt),
+            args=(sources, provider, model, workspace, prompt),
             daemon=True,
         )
         thread.start()
 
     def _run_pipeline(
         self,
-        source: str,
+        sources: list[str],
         provider: str,
         model: str,
         workspace: Path | None,
         prompt: str | None,
     ) -> None:
-        try:
-            pipeline = self.pipeline_factory(provider, model, workspace)
-            self.event_queue.put(("log", tr(self.language, "window_pipeline_ready", workspace=pipeline.settings.workspace_root)))
-            result = pipeline.transcribe(source, prompt=prompt)
-            self.event_queue.put(("done", result))
-        except Exception as exc:
-            self.event_queue.put(("error", str(exc)))
+        completed = 0
+        failed = 0
+        pipeline = None
+        for index, source in enumerate(sources, start=1):
+            try:
+                if pipeline is None:
+                    pipeline = self.pipeline_factory(provider, model, workspace)
+                    self.event_queue.put(("log", tr(self.language, "window_pipeline_ready", workspace=pipeline.settings.workspace_root)))
+                self.event_queue.put(("log", tr(self.language, "window_batch_item_start", index=index, total=len(sources), source=source)))
+                result = pipeline.transcribe(source, prompt=prompt)
+                completed += 1
+                self.event_queue.put(("result", result))
+            except Exception as exc:
+                failed += 1
+                self.event_queue.put(("log", tr(self.language, "window_batch_item_failed", index=index, source=source, message=exc)))
+        self.event_queue.put(("done", {"completed": completed, "failed": failed}))
 
     def _drain_events(self) -> None:
         while True:
@@ -185,14 +197,18 @@ class WindowApp:
 
             if kind == "log":
                 self._append_log(str(payload))
-            elif kind == "done":
+            elif kind == "result":
                 result = payload
                 assert isinstance(result, TranscriptResult)
                 self.latest_result = result
                 self._append_log(tr(self.language, "transcript_saved", path=result.transcript_path))
                 self._append_log(tr(self.language, "metadata_saved", path=result.metadata_path))
                 self._set_result_text(result.text)
-                self.status_var.set(tr(self.language, "window_status_completed"))
+            elif kind == "done":
+                assert isinstance(payload, dict)
+                self._append_log(tr(self.language, "window_batch_finished", completed=payload["completed"], failed=payload["failed"]))
+                status_key = "window_status_failed" if payload["completed"] == 0 and payload["failed"] > 0 else "window_status_completed"
+                self.status_var.set(tr(self.language, status_key))
                 self.is_running = False
                 self.transcribe_button.state(["!disabled"])
             elif kind == "error":
@@ -230,7 +246,8 @@ class WindowApp:
             ],
         )
         if path:
-            self.source_var.set(path)
+            self.source_text.delete("1.0", "end")
+            self.source_text.insert("1.0", path)
 
     def _choose_workspace(self) -> None:
         directory = filedialog.askdirectory(title=tr(self.language, "window_choose_workspace"))

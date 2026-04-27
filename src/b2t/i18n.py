@@ -16,6 +16,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "app_help": "把 Bilibili 视频变成文字的命令行工具。",
         "show_version": "显示版本号。",
         "cmd_transcribe_help": "转写视频或音频（缩写: tx）。",
+        "cmd_batch_help": "批量转写多条输入，每行一个 BV、链接或本地文件。",
         "cmd_doctor_help": "检查运行环境（缩写: diag）。",
         "cmd_bootstrap_help": "初始化或重新配置（缩写: init）。",
         "cmd_web_help": "启动 Web 界面（缩写: ui）。",
@@ -23,6 +24,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "cmd_window_help": "启动桌面窗口（缩写: win）。",
         "cmd_language_help": "切换界面语言（缩写: lang）。",
         "arg_source_help": "BV 号、Bilibili 链接或本地文件路径。",
+        "arg_sources_help": "一条或多条输入；也可以用 --file 读取每行一个输入。",
         "opt_provider_help": "转写引擎: whisper / sensevoice / volcengine。",
         "opt_model_help": "模型名称。",
         "opt_prompt_help": "转写提示词（可选）。",
@@ -31,6 +33,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "opt_host_help": "监听地址。",
         "opt_port_help": "监听端口。",
         "opt_language_help": "语言代码，如 zh-CN、en-US。",
+        "opt_source_file_help": "包含批量输入的文本文件，每行一个。",
 
         # ── Runtime messages ─────────────────────────────────
         "missing_dependency": "缺少依赖 '{name}'。{guidance}",
@@ -39,6 +42,9 @@ MESSAGES: dict[str, dict[str, str]] = {
         "metadata_saved": "元数据已保存: {path}",
         "error_prefix": "出错了: {message}",
         "task_submitted": "任务已创建: {task_id}",
+        "batch_submitted": "已创建 {count} 个任务:",
+        "batch_task_completed": "任务完成: {task_id}",
+        "batch_task_failed": "任务失败: {task_id} - {message}",
 
         # ── Doctor ───────────────────────────────────────────
         "doctor_yt_dlp": "yt-dlp",
@@ -124,7 +130,7 @@ MESSAGES: dict[str, dict[str, str]] = {
 
         # ── Window ───────────────────────────────────────────
         "window_title": "bili2text",
-        "window_source": "输入源",
+        "window_source": "输入源（可多行）",
         "window_provider": "转写引擎",
         "window_model": "模型",
         "window_workspace": "工作目录",
@@ -148,17 +154,22 @@ MESSAGES: dict[str, dict[str, str]] = {
         "window_starting": "开始转写: provider={provider}, model={model}",
         "window_pipeline_ready": "Pipeline 就绪，工作目录: {workspace}",
         "window_error": "出错了: {message}",
+        "window_batch_submitted": "已加入批量队列: {count} 条",
+        "window_batch_item_start": "[{index}/{total}] 开始: {source}",
+        "window_batch_item_failed": "[{index}] 失败: {source} - {message}",
+        "window_batch_finished": "批量完成: 成功 {completed}，失败 {failed}",
 
         # ── Web ──────────────────────────────────────────────
         "web_title": "bili2text",
         "web_subtitle": "Bilibili 视频转文字",
         "web_error": "出错了",
         "web_form_title": "开始转写",
-        "web_source": "BV / URL / 本地路径",
+        "web_source": "BV / URL / 本地路径（可多行）",
         "web_provider": "转写引擎",
         "web_model": "模型",
         "web_prompt": "提示词",
         "web_submit": "开始",
+        "web_batch_submitted": "已提交 {count} 个任务",
         "web_result_title": "转写完成",
         "web_back_home": "返回首页",
         "web_result_files": "输出文件",
@@ -195,6 +206,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "app_help": "Turn Bilibili videos into text, right from the command line.",
         "show_version": "Show version.",
         "cmd_transcribe_help": "Transcribe a video or audio file (alias: tx).",
+        "cmd_batch_help": "Batch transcribe multiple inputs, one BV, URL, or local file per line.",
         "cmd_doctor_help": "Check runtime dependencies (alias: diag).",
         "cmd_bootstrap_help": "Set up or reconfigure bili2text (alias: init).",
         "cmd_web_help": "Launch the web UI (alias: ui).",
@@ -202,6 +214,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "cmd_window_help": "Launch the desktop window (alias: win).",
         "cmd_language_help": "Switch the interface language (alias: lang).",
         "arg_source_help": "BV id, Bilibili URL, or a local media file.",
+        "arg_sources_help": "One or more inputs; use --file to read one input per line.",
         "opt_provider_help": "Transcription engine: whisper / sensevoice / volcengine.",
         "opt_model_help": "Model name.",
         "opt_prompt_help": "Optional transcription prompt.",
@@ -210,6 +223,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "opt_host_help": "Bind address.",
         "opt_port_help": "Bind port.",
         "opt_language_help": "Language code, e.g. zh-CN or en-US.",
+        "opt_source_file_help": "Text file containing one batch input per line.",
 
         # ── Runtime messages ─────────────────────────────────
         "missing_dependency": "Missing dependency '{name}'. {guidance}",
@@ -218,6 +232,9 @@ MESSAGES: dict[str, dict[str, str]] = {
         "metadata_saved": "Metadata saved: {path}",
         "error_prefix": "Error: {message}",
         "task_submitted": "Task created: {task_id}",
+        "batch_submitted": "Created {count} tasks:",
+        "batch_task_completed": "Task completed: {task_id}",
+        "batch_task_failed": "Task failed: {task_id} - {message}",
 
         # ── Doctor ───────────────────────────────────────────
         "doctor_yt_dlp": "yt-dlp",
@@ -303,7 +320,7 @@ MESSAGES: dict[str, dict[str, str]] = {
 
         # ── Window ───────────────────────────────────────────
         "window_title": "bili2text",
-        "window_source": "Source",
+        "window_source": "Source (one per line)",
         "window_provider": "Engine",
         "window_model": "Model",
         "window_workspace": "Workspace",
@@ -327,17 +344,22 @@ MESSAGES: dict[str, dict[str, str]] = {
         "window_starting": "Starting transcription: provider={provider}, model={model}",
         "window_pipeline_ready": "Pipeline ready — workspace: {workspace}",
         "window_error": "Error: {message}",
+        "window_batch_submitted": "Queued batch: {count} inputs",
+        "window_batch_item_start": "[{index}/{total}] Starting: {source}",
+        "window_batch_item_failed": "[{index}] Failed: {source} - {message}",
+        "window_batch_finished": "Batch finished: {completed} completed, {failed} failed",
 
         # ── Web ──────────────────────────────────────────────
         "web_title": "bili2text",
         "web_subtitle": "Bilibili video to text",
         "web_error": "Error",
         "web_form_title": "Transcribe",
-        "web_source": "BV / URL / local path",
+        "web_source": "BV / URL / local path (one per line)",
         "web_provider": "Engine",
         "web_model": "Model",
         "web_prompt": "Prompt",
         "web_submit": "Start",
+        "web_batch_submitted": "Submitted {count} tasks",
         "web_result_title": "Transcription Complete",
         "web_back_home": "Back to Home",
         "web_result_files": "Output Files",

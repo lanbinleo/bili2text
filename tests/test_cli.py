@@ -11,6 +11,7 @@ def test_cli_help_renders() -> None:
     assert result.exit_code == 0
     assert "Bilibili" in result.stdout
     assert "bootstrap" in result.stdout
+    assert "batch" in result.stdout
     assert "transcribe" in result.stdout
     assert "window" in result.stdout
     # aliases are now hidden, but mentioned in help text parenthetically

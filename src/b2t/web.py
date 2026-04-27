@@ -10,12 +10,22 @@ from pydantic import BaseModel
 
 from b2t.database import AppDatabase
 from b2t.i18n import tr
+from b2t.inputs import parse_source_list
 from b2t.library import WorkspaceLibrary
+from b2t.models import TaskRecord
 from b2t.tasks import TaskService
 
 
 class TranscribeTaskRequest(BaseModel):
     source: str
+    provider: str = "whisper"
+    model: str = "small"
+    prompt: str = ""
+
+
+class BatchTranscribeTaskRequest(BaseModel):
+    sources: list[str] | None = None
+    source_text: str | None = None
     provider: str = "whisper"
     model: str = "small"
     prompt: str = ""
@@ -74,17 +84,69 @@ def create_app(
         model: str = Form("small"),
         prompt: str = Form(""),
     ) -> HTMLResponse:
-        task = task_service.submit_transcription(
-            source=source,
+        try:
+            sources = parse_source_list(source)
+        except ValueError as exc:
+            return templates.TemplateResponse(
+                request,
+                "index.html",
+                {
+                    "error": str(exc),
+                    "values": {
+                        "source": source,
+                        "provider": provider,
+                        "model": model,
+                        "prompt": prompt,
+                    },
+                    "videos": database.list_videos(),
+                    "lang": language,
+                    "t": lambda key, **kwargs: tr(language, key, **kwargs),
+                },
+                status_code=400,
+            )
+
+        tasks = _submit_transcription_tasks(
+            task_service,
+            sources=sources,
             provider=provider,
             model=model,
             prompt=prompt,
         )
+        if len(tasks) > 1:
+            return templates.TemplateResponse(
+                request,
+                "batch.html",
+                {
+                    "tasks": [asdict(task) for task in tasks],
+                    "lang": language,
+                    "t": lambda key, **kwargs: tr(language, key, **kwargs),
+                },
+            )
+
+        task = tasks[0]
         return templates.TemplateResponse(
             request,
             "task.html",
             {
                 "task_id": task.id,
+                "lang": language,
+                "t": lambda key, **kwargs: tr(language, key, **kwargs),
+            },
+        )
+
+    @app.get("/tasks/batch", response_class=HTMLResponse)
+    async def batch_task_page(request: Request, ids: str = Query("")) -> HTMLResponse:
+        task_ids = [task_id.strip() for task_id in ids.split(",") if task_id.strip()]
+        tasks = []
+        for task_id in task_ids:
+            task = database.get_task(task_id)
+            if task is not None:
+                tasks.append(asdict(task))
+        return templates.TemplateResponse(
+            request,
+            "batch.html",
+            {
+                "tasks": tasks,
                 "lang": language,
                 "t": lambda key, **kwargs: tr(language, key, **kwargs),
             },
@@ -159,6 +221,29 @@ def create_app(
             prompt=payload.prompt,
         )
         return JSONResponse({"task_id": task.id, "status": task.status})
+
+    @app.post("/api/tasks/batch")
+    async def create_batch_transcription_tasks(payload: BatchTranscribeTaskRequest) -> JSONResponse:
+        source_chunks = list(payload.sources or [])
+        if payload.source_text:
+            source_chunks.append(payload.source_text)
+        try:
+            sources = parse_source_list("\n".join(source_chunks))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        tasks = _submit_transcription_tasks(
+            task_service,
+            sources=sources,
+            provider=payload.provider,
+            model=payload.model,
+            prompt=payload.prompt,
+        )
+        return JSONResponse(
+            {
+                "items": [asdict(task) for task in tasks],
+                "count": len(tasks),
+            }
+        )
 
     @app.get("/api/tasks")
     async def list_tasks(
@@ -326,3 +411,22 @@ def create_app(
         return JSONResponse({"status": "ok"})
 
     return app
+
+
+def _submit_transcription_tasks(
+    task_service: TaskService,
+    *,
+    sources: list[str],
+    provider: str,
+    model: str,
+    prompt: str = "",
+) -> list[TaskRecord]:
+    return [
+        task_service.submit_transcription(
+            source=source,
+            provider=provider,
+            model=model,
+            prompt=prompt,
+        )
+        for source in sources
+    ]

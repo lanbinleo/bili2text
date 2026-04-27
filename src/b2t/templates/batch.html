@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ t("web_title") }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+    <a href="/" class="text-sm text-indigo-600">← {{ t("web_back_home") }}</a>
+    <section class="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
+      <div class="flex items-center justify-between gap-4">
+        <h1 class="text-2xl font-semibold">{{ t("web_batch_submitted", count=tasks|length) }}</h1>
+        <span id="batch-summary" class="text-sm text-gray-500"></span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b text-gray-500">
+            <tr>
+              <th class="py-2 pr-4 font-medium">Task</th>
+              <th class="py-2 pr-4 font-medium">Source</th>
+              <th class="py-2 pr-4 font-medium">Status</th>
+              <th class="py-2 font-medium">Progress</th>
+            </tr>
+          </thead>
+          <tbody id="batch-rows" class="divide-y divide-gray-100">
+            {% for task in tasks %}
+            <tr data-task-id="{{ task.id }}">
+              <td class="py-3 pr-4 font-mono text-xs">{{ task.id }}</td>
+              <td class="py-3 pr-4 max-w-md truncate">{{ task.source_input }}</td>
+              <td class="task-status py-3 pr-4 text-gray-600">{{ task.status }}</td>
+              <td class="py-3">
+                <div class="h-2 overflow-hidden rounded-full bg-gray-200">
+                  <div class="task-bar h-full w-0 bg-indigo-600 transition-all"></div>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="py-4 text-gray-500">No tasks.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const rows = Array.from(document.querySelectorAll("[data-task-id]"));
+
+    async function pollRow(row) {
+      const taskId = row.dataset.taskId;
+      const response = await fetch(`/api/tasks/${taskId}/progress`);
+      const data = await response.json();
+      const percent = Math.max(0, Math.min(100, Math.round((data.progress_percent || 0) * 100)));
+      row.querySelector(".task-status").textContent = `${data.status} · ${data.current_stage || ""}`;
+      row.querySelector(".task-bar").style.width = `${percent}%`;
+      if (data.status === "completed" && data.video_id) {
+        row.querySelector(".task-status").innerHTML = `<a class="text-indigo-600" href="/videos/${data.video_id}">${data.status}</a>`;
+      }
+      return data.status;
+    }
+
+    async function pollBatch() {
+      const statuses = await Promise.all(rows.map(pollRow));
+      const done = statuses.filter((status) => ["completed", "failed", "cancelled"].includes(status)).length;
+      document.getElementById("batch-summary").textContent = `${done}/${rows.length}`;
+      if (done < rows.length) {
+        setTimeout(pollBatch, 1000);
+      }
+    }
+
+    if (rows.length > 0) {
+      pollBatch();
+    }
+  </script>
+</body>
+</html>

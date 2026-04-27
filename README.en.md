@@ -80,11 +80,24 @@ Specify an engine and model:
 uv run bili2text tx "BV1kfDTBXEfu" --provider whisper --model medium
 ```
 
+Submit multiple inputs in one batch:
+
+```bash
+uv run bili2text batch "BV1kfDTBXEfu" "https://www.bilibili.com/video/BV1xx411c7XD"
+```
+
+Or put one BV, URL, or local file path per line:
+
+```bash
+uv run bili2text batch --file sources.txt
+```
+
 ## Commands
 
 | Command | Alias | What it does |
 | --- | --- | --- |
 | `bili2text transcribe` | `tx` | Transcribe a video or audio file |
+| `bili2text batch` | - | Batch transcribe multiple inputs |
 | `bili2text bootstrap` | `init` | Run the setup wizard |
 | `bili2text web` | `ui` | Start the web UI |
 | `bili2text server` | `srv` | Start server mode |

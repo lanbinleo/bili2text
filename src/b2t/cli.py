@@ -14,6 +14,7 @@ from b2t.config import Settings
 from b2t.database import AppDatabase
 from b2t.factory import build_pipeline
 from b2t.i18n import DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES, dependency_sync_guidance, resolve_language, tr
+from b2t.inputs import parse_source_list
 from b2t.library import WorkspaceLibrary
 from b2t.tasks import TaskService
 from b2t.user_config import AppConfig
@@ -81,6 +82,68 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
 
         typer.echo(tr(config.language, "transcript_saved", path=transcript["file_path"]))
         typer.echo(tr(config.language, "metadata_saved", path=video["metadata_path"]))
+
+    @app.command("batch", help=tr(language, "cmd_batch_help"))
+    def batch_transcribe(
+        sources: list[str] | None = typer.Argument(None, help=tr(language, "arg_sources_help")),
+        source_file: Path | None = typer.Option(None, "--file", "-f", help=tr(language, "opt_source_file_help")),
+        provider: str | None = typer.Option(None, "--provider", help=tr(language, "opt_provider_help")),
+        model: str | None = typer.Option(None, "--model", help=tr(language, "opt_model_help")),
+        prompt: str = typer.Option("", "--prompt", help=tr(language, "opt_prompt_help")),
+        workspace: Path | None = typer.Option(None, "--workspace", help=tr(language, "opt_workspace_help")),
+    ) -> None:
+        """Submit multiple transcription tasks from arguments or a newline-separated file."""
+        selected_language = _detect_preferred_language(workspace)
+        try:
+            settings, config = _load_runtime(workspace=workspace, provider=provider, model=model)
+            service = _build_task_service(
+                settings=settings,
+                config=config,
+                provider=provider,
+                model=model,
+            )
+            source_values = _collect_batch_sources(sources or [], source_file)
+            tasks = [
+                service.submit_transcription(
+                    source=source,
+                    provider=provider or config.default_provider,
+                    model=model or config.default_model,
+                    prompt=prompt,
+                )
+                for source in source_values
+            ]
+            typer.echo(tr(config.language, "batch_submitted", count=len(tasks)))
+            for task in tasks:
+                typer.echo(f"{task.id}\t{task.source_input}")
+
+            failed = 0
+            for task in tasks:
+                try:
+                    completed = service.wait_for_task(task.id)
+                except Exception as exc:
+                    failed += 1
+                    typer.secho(
+                        tr(config.language, "batch_task_failed", task_id=task.id, message=exc),
+                        err=True,
+                        fg=typer.colors.RED,
+                    )
+                    continue
+                if completed.status == "completed":
+                    typer.echo(tr(config.language, "batch_task_completed", task_id=completed.id))
+                else:
+                    failed += 1
+                    typer.secho(
+                        tr(config.language, "batch_task_failed", task_id=completed.id, message=completed.error_message),
+                        err=True,
+                        fg=typer.colors.RED,
+                    )
+        except Exception as exc:
+            message = tr(selected_language, "error_prefix", message=exc)
+            typer.secho(message, err=True, fg=typer.colors.RED)
+            raise typer.Exit(code=1) from exc
+
+        if failed:
+            raise typer.Exit(code=1)
 
     @app.command("doctor", help=tr(language, "cmd_doctor_help"))
     @app.command("diag", hidden=True)
@@ -293,6 +356,14 @@ def _build_task_service(
     )
     service.ensure_indexed()
     return service
+
+
+def _collect_batch_sources(sources: list[str], source_file: Path | None) -> list[str]:
+    chunks: list[str] = []
+    if source_file is not None:
+        chunks.append(source_file.expanduser().read_text(encoding="utf-8"))
+    chunks.extend(sources)
+    return parse_source_list("\n".join(chunks))
 
 
 app = create_app(DEFAULT_LANGUAGE)

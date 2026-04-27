@@ -87,11 +87,24 @@ uv run bili2text tx ./my-video.mp4
 uv run bili2text tx "BV1kfDTBXEfu" --provider whisper --model medium
 ```
 
+批量提交多条输入：
+
+```bash
+uv run bili2text batch "BV1kfDTBXEfu" "https://www.bilibili.com/video/BV1xx411c7XD"
+```
+
+也可以用文本文件，每行一个 BV、链接或本地文件路径：
+
+```bash
+uv run bili2text batch --file sources.txt
+```
+
 ## 命令一览
 
 | 命令 | 缩写 | 说明 |
 | --- | --- | --- |
 | `bili2text transcribe` | `tx` | 转写视频或音频 |
+| `bili2text batch` | - | 批量转写多条输入 |
 | `bili2text bootstrap` | `init` | 配置向导 |
 | `bili2text web` | `ui` | 启动 Web 界面 |
 | `bili2text server` | `srv` | 启动服务模式 |

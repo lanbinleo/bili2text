@@ -22,7 +22,7 @@
     <section class="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
       <h2 class="text-lg font-medium">{{ t("web_form_title") }}</h2>
       <form method="post" action="/transcribe" class="space-y-4">
-        <input name="source" value="{{ values.source }}" placeholder="BV1xxxxxxxxx" class="w-full rounded border px-3 py-2">
+        <textarea name="source" rows="4" placeholder="BV1xxxxxxxxx" class="w-full rounded border px-3 py-2">{{ values.source }}</textarea>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <select name="provider" class="rounded border px-3 py-2">
             <option value="whisper" {% if values.provider == "whisper" %}selected{% endif %}>whisper</option>

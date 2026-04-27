@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from b2t.inputs import parse_source, safe_stem
+from b2t.inputs import parse_source, parse_source_list, safe_stem
 
 
 def test_parse_bv_identifier() -> None:
@@ -50,6 +50,22 @@ def test_parse_local_audio_file(tmp_path: Path) -> None:
     source = parse_source(str(audio_path))
     assert source.kind == "audio"
     assert source.path == audio_path.resolve()
+
+
+def test_parse_source_list_ignores_blank_lines_and_comments() -> None:
+    sources = parse_source_list(
+        """
+        BV1xx411c7XD
+
+        # optional note
+        https://www.bilibili.com/video/BV1yy411c7XD
+        """
+    )
+
+    assert sources == [
+        "BV1xx411c7XD",
+        "https://www.bilibili.com/video/BV1yy411c7XD",
+    ]
 
 
 def test_safe_stem_removes_unsafe_characters() -> None:
