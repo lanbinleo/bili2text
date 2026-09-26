@@ -31,7 +31,7 @@ class WorkspaceLibrary:
             source_input=result.source.raw_input,
             source_url=result.source.url,
             source_bv=result.source.bv,
-            title=result.metadata.get("download", {}).get("title") or result.source.display_name,
+            title=(result.metadata.get("download") or {}).get("title") or result.source.display_name,
             display_name=result.source.display_name,
             language=result.metadata.get("language"),
             engine=result.engine,
