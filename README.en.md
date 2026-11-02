@@ -31,6 +31,7 @@ There's also a simple web UI and a desktop window for anyone who'd rather not us
 | **Whisper** | Local model | OpenAI's open-source speech recognition model. Runs offline, general-purpose |
 | **SenseVoice** | Local model | ONNX-based local model with strong Chinese recognition |
 | **Volcengine** | Cloud API | ByteDance's commercial ASR service, good for batch or service-oriented workloads |
+| **MiMo** | Cloud API | Xiaomi MiMo ASR (`mimo-v2.5-asr`) over an OpenAI-compatible API; long audio is chunked and transcribed in parallel |
 
 ## Quick Start
 
@@ -50,7 +51,7 @@ This only installs core dependencies. Transcription engines and extra features a
 uv sync --extra whisper --extra web
 ```
 
-Available extras: `whisper`, `sensevoice`, `volcengine`, `web`, `server`.
+Available extras: `whisper`, `sensevoice`, `volcengine`, `mimo`, `web`, `server`.
 
 #### Prepare the SenseVoice ONNX model
 
@@ -104,6 +105,23 @@ Or put one BV, URL, or local file path per line:
 ```bash
 uv run bili2text batch --file sources.txt
 ```
+
+### MiMo cloud transcription
+
+MiMo uses an OpenAI-compatible API, so install the extra and configure a key first:
+
+```bash
+uv sync --extra mimo
+uv run bili2text bootstrap   # pick mimo, paste the API key
+```
+
+Long audio is split into 60-second chunks and transcribed concurrently. `--workers` sets the concurrency (default 4):
+
+```bash
+uv run bili2text tx "BV1kfDTBXEfu" --provider mimo --workers 6
+```
+
+Pushing concurrency too high gets you rate-limited (HTTP 429). Individual chunks retry with backoff, and successful chunks are cached under `.b2t/cache/mimo/` keyed by audio content — so re-running an interrupted job **only pays for what is missing**.
 
 ## Commands
 

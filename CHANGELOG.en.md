@@ -8,6 +8,14 @@
 - added multiline batch submission to the web UI and API
 - added multiline batch processing to the desktop window
 
+### MiMo Transcription Engine
+
+- added Xiaomi MiMo (`mimo-v2.5-asr`) as a cloud engine, using OpenAI-compatible chat completions with `input_audio`
+- long audio is split into 60s chunks and transcribed concurrently; added `--workers` and the `mimo.workers` config key (default 4)
+- chunks retry with backoff so a single rate-limit response cannot discard a long job
+- successful chunks are cached under `.b2t/cache/mimo/` keyed by audio content, so a re-run after an interruption only transcribes what is missing
+- fixed a crash when indexing local-file transcriptions whose `download` metadata is `None`
+
 ## 2026-04-10 (v0.3.0)
 
 ### Version Cleanup

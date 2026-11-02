@@ -44,6 +44,20 @@ def build_pipeline(
             model_name=selected_model or config.volcengine.model_name,
             use_itn=config.volcengine.use_itn,
         )
+    elif selected_provider == "mimo":
+        from b2t.transcribers.mimo import MimoTranscriber
+
+        # selected_model may carry whisper's default ("small"); only honor it when it
+        # actually looks like a MiMo model id.
+        chosen_model = selected_model if selected_model.startswith("mimo") else config.mimo.model_name
+        transcriber = MimoTranscriber(
+            api_key=config.mimo.api_key,
+            base_url=config.mimo.base_url,
+            model_name=chosen_model or "mimo-v2.5-asr",
+            language=config.mimo.language,
+            workers=config.mimo.workers,
+            cache_dir=settings.cache_dir,
+        )
     else:
         raise RuntimeError(f"Unsupported provider: {selected_provider}")
 
