@@ -79,14 +79,23 @@ class YtDlpDownloader(Downloader):
 
     def _build_ydl_opts(self, source: SourceRef, settings: Settings) -> dict[str, Any]:
         ydl_opts: dict[str, Any] = {
-            "format": "bv*+ba/b",
-            "merge_output_format": "mp4",
             "noplaylist": True,
             "outtmpl": str(settings.downloads_dir / "%(id)s.%(ext)s"),
             "noprogress": True,
             "quiet": True,
             "no_warnings": True,
         }
+
+        # Transcription only needs the audio track, so download audio-only by
+        # default instead of the best video (which can be a multi-GB 4K file
+        # that `ffmpeg -vn` immediately discards). Set B2T_KEEP_VIDEO=1 or pass
+        # --keep-video to download and keep the full video as well.
+        keep_video = os.getenv("B2T_KEEP_VIDEO", "").strip().lower() in {"1", "true", "yes", "on"}
+        if keep_video:
+            ydl_opts["format"] = "bv*+ba/b"
+            ydl_opts["merge_output_format"] = "mp4"
+        else:
+            ydl_opts["format"] = "ba/bestaudio/best"
 
         # Support cookies for authenticated access to Bilibili.
         # Priority: B2T_COOKIE_FILE env var > cookies.txt in workspace.
