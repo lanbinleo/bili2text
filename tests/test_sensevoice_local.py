@@ -57,3 +57,55 @@ def test_sensevoice_reports_missing_tokenizer_before_model_load(tmp_path: Path) 
 
     with pytest.raises(RuntimeError, match="chn_jpn_yue_eng_ko_spectok.bpe.model"):
         transcriber._ensure_model()
+
+
+@pytest.fixture
+def _fake_funasr_runtime(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    """Inject a funasr_onnx whose SenseVoiceSmall captures __call__ kwargs."""
+    calls: list[dict] = []
+
+    class _FakeSenseVoiceSmall:
+        def __call__(self, wav_content, **kwargs):
+            calls.append(kwargs)
+            return [{"text": "你好 world 123"}]
+
+    postprocess_mod = SimpleNamespace(
+        rich_transcription_postprocess=lambda text: text.upper()
+    )
+    utils_mod = SimpleNamespace(postprocess_utils=postprocess_mod)
+    funasr_mod = SimpleNamespace(SenseVoiceSmall=_FakeSenseVoiceSmall, utils=utils_mod)
+
+    monkeypatch.setitem(sys.modules, "funasr_onnx", funasr_mod)
+    monkeypatch.setitem(sys.modules, "funasr_onnx.utils", utils_mod)
+    monkeypatch.setitem(sys.modules, "funasr_onnx.utils.postprocess_utils", postprocess_mod)
+    return calls
+
+
+@pytest.mark.parametrize(
+    ("use_itn", "expected_textnorm"),
+    ((True, "withitn"), (False, "woitn")),
+)
+def test_sensevoice_maps_use_itn_to_textnorm_kwarg(
+    tmp_path: Path,
+    _fake_funasr_runtime: list[dict],
+    use_itn: bool,
+    expected_textnorm: str,
+) -> None:
+    """funasr-onnx 0.4.1 renamed use_itn to textnorm and silently ignores the
+    old kwarg (issue #105) — the adapter must keep both versions working."""
+    transcriber = SenseVoiceSmallTranscriber(
+        model_dir=tmp_path, use_itn=use_itn
+    )
+    transcriber._model = sys.modules["funasr_onnx"].SenseVoiceSmall()
+
+    audio = tmp_path / "a.wav"
+    audio.write_bytes(b"RIFF")
+    transcriber.transcribe(audio)
+
+    assert _fake_funasr_runtime == [
+        {
+            "language": "auto",
+            "use_itn": use_itn,  # funasr-onnx 0.4.0 reads this
+            "textnorm": expected_textnorm,  # funasr-onnx 0.4.1 reads this
+        }
+    ]
