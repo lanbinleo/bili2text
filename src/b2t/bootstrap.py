@@ -164,6 +164,11 @@ def run_bootstrap(*, settings: Settings, interactive: bool = True) -> AppConfig:
             "value": "volcengine",
             "enabled": "volcengine" in config.enabled_providers,
         },
+        {
+            "name": f"mimo       — {tr(lang, 'provider_mimo_short')}",
+            "value": "mimo",
+            "enabled": "mimo" in config.enabled_providers,
+        },
     ]
     selected_providers: list[str] = inquirer.checkbox(
         message=tr(lang, "bootstrap_providers_prompt"),
@@ -212,6 +217,8 @@ def run_bootstrap(*, settings: Settings, interactive: bool = True) -> AppConfig:
             _configure_sensevoice(config, lang)
         elif provider == "volcengine":
             _configure_volcengine(config, lang)
+        elif provider == "mimo":
+            _configure_mimo(config, lang)
 
     # ── 5. Pick default provider ─────────────────────────────
     console.print()
@@ -322,6 +329,25 @@ def _configure_volcengine(config: AppConfig, lang: str) -> None:
         message=tr(lang, "bootstrap_volc_itn_prompt"),
         default=config.volcengine.use_itn,
     ).execute()
+
+
+def _configure_mimo(config: AppConfig, lang: str) -> None:
+    config.mimo.api_key = inquirer.secret(
+        message=tr(lang, "bootstrap_mimo_api_key_prompt"),
+        default=config.mimo.api_key,
+    ).execute().strip()
+    config.mimo.base_url = inquirer.text(
+        message=tr(lang, "bootstrap_mimo_base_url_prompt"),
+        default=config.mimo.base_url,
+    ).execute().strip()
+    config.mimo.model_name = inquirer.text(
+        message=tr(lang, "bootstrap_mimo_model_prompt"),
+        default=config.mimo.model_name,
+    ).execute().strip()
+    config.mimo.language = inquirer.text(
+        message=tr(lang, "bootstrap_mimo_language_prompt"),
+        default=config.mimo.language,
+    ).execute().strip()
 
 
 def _show_next_steps(

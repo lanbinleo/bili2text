@@ -36,6 +36,7 @@
 | **Whisper** | 本地模型 | OpenAI 开源的语音识别模型，离线运行，通用性强 |
 | **SenseVoice** | 本地模型 | 阿里云开源本地语音识别模型，中文识别效果好 |
 | **火山引擎** | 云端 API | 字节跳动旗下的商用语音识别服务，识别很准很推荐 |
+| **MiMo** | 云端 API | 小米 MiMo 语音识别（`mimo-v2.5-asr`），OpenAI 兼容协议，长音频自动切片并发转写 |
 
 ## 快速开始
 
@@ -57,7 +58,7 @@ uv sync
 uv sync --extra whisper --extra web
 ```
 
-可选的 extras：`whisper`、`sensevoice`、`volcengine`、`web`、`server`。可以暂时不用安装，详看下方的初始化文档。
+可选的 extras：`whisper`、`sensevoice`、`volcengine`、`mimo`、`web`、`server`。可以暂时不用安装，详看下方的初始化文档。
 
 #### 准备 SenseVoice ONNX 模型
 
@@ -111,6 +112,23 @@ uv run bili2text batch "BV1kfDTBXEfu" "https://www.bilibili.com/video/BV1xx411c7
 ```bash
 uv run bili2text batch --file sources.txt
 ```
+
+### MiMo 云端转写
+
+MiMo 走的是 OpenAI 兼容协议，需要先装 extra 并配好 API Key：
+
+```bash
+uv sync --extra mimo
+uv run bili2text bootstrap   # 选 mimo，填 API Key
+```
+
+长音频会自动按 60 秒切片并发转写，`--workers` 控制并发数（默认 4）：
+
+```bash
+uv run bili2text tx "BV1kfDTBXEfu" --provider mimo --workers 6
+```
+
+并发调太高会被服务端限流（HTTP 429）。单个切片失败会自动退避重试；转写成功的切片按内容哈希缓存在 `.b2t/cache/mimo/`，所以任务中断后**原样重跑只会补缺失的部分**，不会重复计费。
 
 ## 命令一览
 

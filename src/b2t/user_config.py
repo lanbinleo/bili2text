@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass, field
 from b2t.config import Settings
 from b2t.i18n import DEFAULT_LANGUAGE, normalize_language
 
-ALL_PROVIDERS = ("whisper", "sensevoice", "volcengine")
+ALL_PROVIDERS = ("whisper", "sensevoice", "volcengine", "mimo")
 ALL_FEATURES = ("web", "server", "window")
 
 
@@ -28,6 +28,15 @@ class VolcengineConfig:
 
 
 @dataclass(slots=True)
+class MimoConfig:
+    api_key: str = ""
+    base_url: str = "https://api.xiaomimimo.com/v1"
+    model_name: str = "mimo-v2.5-asr"
+    language: str = "zh"
+    workers: int = 4
+
+
+@dataclass(slots=True)
 class AppConfig:
     language: str = DEFAULT_LANGUAGE
     enabled_providers: list[str] = field(default_factory=lambda: ["whisper"])
@@ -36,6 +45,7 @@ class AppConfig:
     default_model: str = "small"
     sensevoice: SenseVoiceConfig = field(default_factory=SenseVoiceConfig)
     volcengine: VolcengineConfig = field(default_factory=VolcengineConfig)
+    mimo: MimoConfig = field(default_factory=MimoConfig)
 
     @classmethod
     def load(cls, settings: Settings) -> "AppConfig":
@@ -56,6 +66,7 @@ class AppConfig:
             default_model=data.get("default_model", "small"),
             sensevoice=SenseVoiceConfig(**data.get("sensevoice", {})),
             volcengine=VolcengineConfig(**data.get("volcengine", {})),
+            mimo=MimoConfig(**data.get("mimo", {})),
         )
 
     def save(self, settings: Settings) -> None:
