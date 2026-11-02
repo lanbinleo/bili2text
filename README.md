@@ -101,6 +101,18 @@ uv run bili2text tx ./my-video.mp4
 uv run bili2text tx "BV1kfDTBXEfu" --provider whisper --model medium
 ```
 
+下载默认只保留音频（转写用不到视频画面，能省下大量磁盘和带宽）。需要保留视频文件时加 `--keep-video`，或设置环境变量 `B2T_KEEP_VIDEO=1`：
+
+```bash
+uv run bili2text tx "BV1kfDTBXEfu" --keep-video
+```
+
+需要登录态才能下载的视频，可以从浏览器直接提取 Cookie（`chrome`/`firefox`/`edge`/`brave`，也可带配置名如 `firefox:default`）：
+
+```bash
+uv run bili2text tx "BV1kfDTBXEfu" --cookies-from-browser chrome
+```
+
 批量提交多条输入：
 
 ```bash
@@ -129,6 +141,8 @@ uv run bili2text tx "BV1kfDTBXEfu" --provider mimo --workers 6
 ```
 
 并发调太高会被服务端限流（HTTP 429）。单个切片失败会自动退避重试；转写成功的切片按内容哈希缓存在 `.b2t/cache/mimo/`，所以任务中断后**原样重跑只会补缺失的部分**，不会重复计费。
+
+注意：`--prompt` 对 MiMo 引擎无效（ASR 模型不接受文本提示，语言由 `mimo.language` 配置决定）；无效 API Key 等 4xx 致命错误会立即报错，不再空耗重试。
 
 ## 命令一览
 

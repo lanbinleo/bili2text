@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from b2t.transcribers.mimo import MimoTranscriber
+from b2t.transcribers.mimo import MimoTranscriber, _is_retryable
 
 
 class _FakeMessage:
@@ -113,3 +113,42 @@ def test_exhausted_retries_raise(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="MiMo transcription failed"):
         transcriber._transcribe_chunk(client, chunk, "")
+
+
+class _FatalCompletions(_FakeCompletions):
+    """Simulates an openai AuthenticationError: 4xx status, never going to heal."""
+
+    class _AuthError(RuntimeError):
+        status_code = 401
+
+    def create(self, **_kwargs):
+        self.calls += 1
+        raise self._AuthError("401 Incorrect API key")
+
+
+def test_fatal_4xx_fails_fast_without_retry(tmp_path: Path) -> None:
+    transcriber = MimoTranscriber(api_key="k", cache_dir=tmp_path / "cache", max_retries=6)
+    completions = _FatalCompletions()
+    client = _FakeClient(completions)
+    chunk = _chunk(tmp_path)
+
+    with pytest.raises(RuntimeError, match="MiMo transcription failed"):
+        transcriber._transcribe_chunk(client, chunk, "")
+
+    assert completions.calls == 1, "a 401 must not be retried"
+
+
+@pytest.mark.parametrize(
+    ("status_code", "expected"),
+    [(429, True), (500, True), (503, True), (400, False), (401, False), (404, False)],
+)
+def test_is_retryable_classifies_by_status(status_code: int, expected: bool) -> None:
+    class _Exc(RuntimeError):
+        pass
+
+    _Exc.status_code = status_code
+    assert _is_retryable(_Exc("boom")) is expected
+
+
+def test_is_retryable_defaults_to_retry_for_transport_errors() -> None:
+    assert _is_retryable(ConnectionError("socket hang up")) is True

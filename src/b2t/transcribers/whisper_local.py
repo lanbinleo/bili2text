@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
@@ -73,7 +74,11 @@ class LocalWhisperTranscriber(Transcriber):
             # torch builds cannot move to MPS (NotImplementedError at load).
             try:
                 self._model = whisper.load_model(self.model_name, device="mps")
-            except Exception:
+            except Exception as exc:
+                print(
+                    f"MPS unavailable for Whisper ({exc}); falling back to CPU.",
+                    file=sys.stderr,
+                )
                 self.device = "cpu"
                 self._model = whisper.load_model(self.model_name, device="cpu")
         else:
