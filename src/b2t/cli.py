@@ -22,7 +22,7 @@ from b2t.user_config import AppConfig
 
 def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
     app = typer.Typer(
-        add_completion=False,
+        add_completion=True,
         no_args_is_help=True,
         help=tr(language, "app_help"),
     )

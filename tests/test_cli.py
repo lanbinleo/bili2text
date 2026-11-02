@@ -40,3 +40,14 @@ def test_bootstrap_sync_only_requires_existing_config(tmp_path) -> None:
     result = runner.invoke(app, ["bootstrap", "--sync-only", "--workspace", str(workspace)])
     assert result.exit_code == 1
     assert "请先运行一次 bootstrap" in result.stderr
+
+
+def test_shell_completion_is_available() -> None:
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "--install-completion" in result.stdout
+    assert "--show-completion" in result.stdout
+
+    result = runner.invoke(app, ["--show-completion"])
+    assert result.exit_code == 0
+    assert "completion" in result.stdout

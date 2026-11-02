@@ -109,6 +109,28 @@ uv run bili2text batch --file sources.txt
 uv run bili2text --help
 ```
 
+## Shell Completion
+
+bili2text ships with built-in shell completion for Bash, Zsh, Fish, and PowerShell. Install it once, then press Tab to complete subcommands and options:
+
+```bash
+bili2text --install-completion
+```
+
+Restart your terminal (or reload your shell config as prompted) to activate it.
+
+If the script lands in a non-default location, or you run the CLI through `uv run`, you can also generate and source it manually:
+
+```bash
+# Bash
+bili2text --show-completion bash > ~/.bili2text-complete.bash
+echo 'source ~/.bili2text-complete.bash' >> ~/.bashrc
+
+# Zsh
+bili2text --show-completion zsh > ~/.bili2text-complete.zsh
+echo 'source ~/.bili2text-complete.zsh' >> ~/.zshrc
+```
+
 ## Web UI & Server Mode
 
 Start the web interface (opens in your browser):
