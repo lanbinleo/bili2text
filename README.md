@@ -59,6 +59,19 @@ uv sync --extra whisper --extra web
 
 可选的 extras：`whisper`、`sensevoice`、`volcengine`、`web`、`server`。可以暂时不用安装，详看下方的初始化文档。
 
+#### 准备 SenseVoice ONNX 模型
+
+选择 SenseVoice 时，先下载 [`iic/SenseVoiceSmall-onnx`](https://modelscope.cn/models/iic/SenseVoiceSmall-onnx) 到本地目录。该 ONNX 仓库缺少运行时必需的 `chn_jpn_yue_eng_ko_spectok.bpe.model`，还需要从 [`iic/SenseVoiceSmall`](https://modelscope.cn/models/iic/SenseVoiceSmall) 下载这个同名文件，并放进同一目录。最终目录至少应包含：
+
+```text
+config.yaml
+am.mvn
+chn_jpn_yue_eng_ko_spectok.bpe.model
+model_quant.onnx  # 官方量化模型；也支持非量化 model.onnx
+```
+
+配置向导中的 SenseVoice 模型目录应指向这个目录。bili2text 会根据 `model_quant.onnx` 或 `model.onnx` 自动选择量化模式，并在文件不完整时列出缺失项。
+
 ### 初始化配置
 
 第一次运行时会自动弹出配置向导，也可以手动运行：

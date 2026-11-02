@@ -52,6 +52,19 @@ uv sync --extra whisper --extra web
 
 Available extras: `whisper`, `sensevoice`, `volcengine`, `web`, `server`.
 
+#### Prepare the SenseVoice ONNX model
+
+When using SenseVoice, download [`iic/SenseVoiceSmall-onnx`](https://modelscope.cn/models/iic/SenseVoiceSmall-onnx) to a local directory. That ONNX repository does not include the required `chn_jpn_yue_eng_ko_spectok.bpe.model`; download the file with that name from [`iic/SenseVoiceSmall`](https://modelscope.cn/models/iic/SenseVoiceSmall) and place it in the same directory. The final directory must contain at least:
+
+```text
+config.yaml
+am.mvn
+chn_jpn_yue_eng_ko_spectok.bpe.model
+model_quant.onnx  # official quantized model; model.onnx is also supported
+```
+
+Point the SenseVoice model-directory prompt at this directory. bili2text automatically selects quantized or non-quantized loading from `model_quant.onnx` or `model.onnx`, and reports incomplete directories before loading the runtime.
+
 ### Set Up
 
 A setup wizard runs automatically the first time, or you can launch it manually:
