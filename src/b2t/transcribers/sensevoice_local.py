@@ -46,6 +46,10 @@ class SenseVoiceSmallTranscriber(Transcriber):
             [str(audio_path)],
             language=self.language,
             use_itn=self.use_itn,
+            # funasr-onnx 0.4.1 把 use_itn 改名成了 textnorm（"withitn"/"woitn"），
+            # 且静默忽略旧参数，导致 ITN 实际永远关闭（issue #105）。两个版本的
+            # __call__ 都是 **kwargs 签名，同时传两个参数即可无缝兼容 0.4.0/0.4.1。
+            textnorm="withitn" if self.use_itn else "woitn",
         )
         text = "\n".join(
             rich_transcription_postprocess(_extract_text(item))

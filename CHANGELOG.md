@@ -7,6 +7,7 @@
 - **行为变更**：下载默认只保留音频文件；需要视频时加 `--keep-video` 或设置 `B2T_KEEP_VIDEO=1`
 - 新增 `--cookies-from-browser`（及 `B2T_COOKIES_FROM_BROWSER` 环境变量），直接从浏览器提取登录态 Cookie，缓解 B 站 412 反爬
 - SenseVoice 自动识别官方量化模型（`model_quant.onnx`），模型目录缺文件时在加载前报出缺失清单
+- 修复 SenseVoice 的 ITN 开关在 funasr-onnx 0.4.1 下静默失效（参数改名为 `textnorm` 且旧参数被忽略，issue #105）
 - 本地 Whisper 引擎支持 Apple Silicon MPS（GPU），加载失败自动降级 CPU 并提示
 - MiMo 引擎：`--prompt` 无效已写入文档；无效 Key 等 4xx 致命错误立即失败，不再空耗退避重试
 
