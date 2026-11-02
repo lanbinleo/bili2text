@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Lock
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from b2t.database import AppDatabase
 from b2t.library import WorkspaceLibrary
@@ -10,15 +10,26 @@ from b2t.models import TaskRecord
 from b2t.pipeline import B2TPipeline
 from b2t.progress import ProgressCallback, ProgressReporter
 
+if TYPE_CHECKING:
+    from b2t.sse import SSEManager
+
 
 PipelineFactory = Callable[[str, str], B2TPipeline]
 
 
 class TaskService:
-    def __init__(self, *, database: AppDatabase, library: WorkspaceLibrary, pipeline_factory: PipelineFactory) -> None:
+    def __init__(
+        self,
+        *,
+        database: AppDatabase,
+        library: WorkspaceLibrary,
+        pipeline_factory: PipelineFactory,
+        sse_manager: "SSEManager | None" = None,
+    ) -> None:
         self.database = database
         self.library = library
         self.pipeline_factory = pipeline_factory
+        self.sse_manager = sse_manager
         self.executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="b2t-task")
         self._listeners: dict[str, list[ProgressCallback]] = {}
         self._futures: dict[str, Future[object]] = {}
@@ -88,6 +99,10 @@ class TaskService:
 
     def _handle_progress(self, snapshot) -> None:  # type: ignore[no-untyped-def]
         self.database.record_progress(snapshot)
+        if self.sse_manager is not None:
+            self.sse_manager.publish(snapshot)
+            if snapshot.status in {"completed", "failed", "cancelled"}:
+                self.sse_manager.notify_terminal(snapshot.task_id)
         with self._lock:
             callbacks = list(self._listeners.get(snapshot.task_id, []))
         for callback in callbacks:

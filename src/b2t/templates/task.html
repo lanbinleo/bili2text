@@ -8,10 +8,10 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
   <main class="max-w-3xl mx-auto px-6 py-8 space-y-6">
-    <a href="/" class="text-sm text-indigo-600">← {{ t("web_back_home") }}</a>
+    <a href="/" class="text-sm text-indigo-600">&larr; {{ t("web_back_home") }}</a>
     <section class="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
       <h1 class="text-2xl font-semibold">Task {{ task_id }}</h1>
-      <p id="task-status" class="text-sm text-gray-600">Polling task progress...</p>
+      <p id="task-status" class="text-sm text-gray-600">Connecting...</p>
       <div class="h-3 overflow-hidden rounded-full bg-gray-200">
         <div id="task-bar" class="h-full w-0 bg-indigo-600 transition-all"></div>
       </div>
@@ -20,22 +20,40 @@
 
   <script>
     const taskId = "{{ task_id }}";
-    async function poll() {
-      const response = await fetch(`/api/tasks/${taskId}/progress`);
-      const data = await response.json();
-      const percent = Math.max(0, Math.min(100, Math.round((data.progress_percent || 0) * 100)));
-      document.getElementById("task-status").textContent = `${data.status} · ${data.current_stage} · ${data.current_message || ""}`;
-      document.getElementById("task-bar").style.width = `${percent}%`;
-      if (data.status === "completed" && data.video_id) {
-        window.location.href = `/videos/${data.video_id}`;
+    const statusEl = document.getElementById("task-status");
+    const barEl = document.getElementById("task-bar");
+
+    function applyProgress(data) {
+      const percent = Math.max(0, Math.min(100, Math.round((data.percent || data.progress_percent || 0) * 100)));
+      const stage = data.stage || data.current_stage || "";
+      const message = data.message || data.current_message || "";
+      statusEl.textContent = `${data.status} \u00b7 ${stage} \u00b7 ${message}`;
+      barEl.style.width = `${percent}%`;
+
+      if (data.status === "completed" && (data.video_id || data.detail && data.detail.video_id)) {
+        const vid = data.video_id || data.detail.video_id;
+        window.location.href = `/videos/${vid}`;
         return;
       }
       if (data.status === "failed") {
+        statusEl.classList.add("text-red-600");
         return;
       }
-      setTimeout(poll, 1000);
     }
-    poll();
+
+    function connect() {
+      const es = new EventSource(`/api/tasks/${taskId}/stream`);
+      es.addEventListener("progress", (e) => {
+        applyProgress(JSON.parse(e.data));
+      });
+      es.addEventListener("error", () => {
+        statusEl.textContent = "Connection lost, reconnecting...";
+        // EventSource auto-reconnects; if the task is already done the
+        // history replay will include the terminal event and we redirect.
+      });
+    }
+
+    connect();
   </script>
 </body>
 </html>

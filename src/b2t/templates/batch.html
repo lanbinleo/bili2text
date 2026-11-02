@@ -8,7 +8,7 @@
 </head>
 <body class="bg-gray-50 text-gray-900">
   <main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
-    <a href="/" class="text-sm text-indigo-600">← {{ t("web_back_home") }}</a>
+    <a href="/" class="text-sm text-indigo-600">&larr; {{ t("web_back_home") }}</a>
     <section class="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
       <div class="flex items-center justify-between gap-4">
         <h1 class="text-2xl font-semibold">{{ t("web_batch_submitted", count=tasks|length) }}</h1>
@@ -49,31 +49,43 @@
 
   <script>
     const rows = Array.from(document.querySelectorAll("[data-task-id]"));
+    const summaryEl = document.getElementById("batch-summary");
+    const finishedSet = new Set();
+    const totalRows = rows.length;
 
-    async function pollRow(row) {
-      const taskId = row.dataset.taskId;
-      const response = await fetch(`/api/tasks/${taskId}/progress`);
-      const data = await response.json();
-      const percent = Math.max(0, Math.min(100, Math.round((data.progress_percent || 0) * 100)));
-      row.querySelector(".task-status").textContent = `${data.status} · ${data.current_stage || ""}`;
+    function updateSummary() {
+      summaryEl.textContent = `${finishedSet.size}/${totalRows}`;
+    }
+
+    function applyProgress(data) {
+      const row = document.querySelector(`[data-task-id="${data.task_id}"]`);
+      if (!row) return;
+
+      const percent = Math.max(0, Math.min(100, Math.round((data.percent || data.progress_percent || 0) * 100)));
+      const stage = data.stage || data.current_stage || "";
+      row.querySelector(".task-status").textContent = `${data.status} \u00b7 ${stage}`;
       row.querySelector(".task-bar").style.width = `${percent}%`;
-      if (data.status === "completed" && data.video_id) {
-        row.querySelector(".task-status").innerHTML = `<a class="text-indigo-600" href="/videos/${data.video_id}">${data.status}</a>`;
+
+      if (data.status === "completed" && (data.video_id || (data.detail && data.detail.video_id))) {
+        const vid = data.video_id || data.detail.video_id;
+        row.querySelector(".task-status").innerHTML = `<a class="text-indigo-600" href="/videos/${vid}">${data.status}</a>`;
+        finishedSet.add(data.task_id);
+      } else if (data.status === "failed" || data.status === "cancelled") {
+        if (data.status === "failed") row.querySelector(".task-status").classList.add("text-red-600");
+        finishedSet.add(data.task_id);
       }
-      return data.status;
+      updateSummary();
     }
 
-    async function pollBatch() {
-      const statuses = await Promise.all(rows.map(pollRow));
-      const done = statuses.filter((status) => ["completed", "failed", "cancelled"].includes(status)).length;
-      document.getElementById("batch-summary").textContent = `${done}/${rows.length}`;
-      if (done < rows.length) {
-        setTimeout(pollBatch, 1000);
-      }
-    }
-
-    if (rows.length > 0) {
-      pollBatch();
+    if (totalRows > 0) {
+      const ids = rows.map((r) => r.dataset.taskId).join(",");
+      const es = new EventSource(`/api/tasks/stream?ids=${ids}`);
+      es.addEventListener("progress", (e) => {
+        applyProgress(JSON.parse(e.data));
+      });
+      es.addEventListener("error", () => {
+        // EventSource auto-reconnects; history replay covers missed events.
+      });
     }
   </script>
 </body>

@@ -181,6 +181,20 @@ MESSAGES: dict[str, dict[str, str]] = {
         "web_result_video": "视频",
         "web_result_text": "文本内容",
 
+        # ── Cookie Settings ────────────────────────────────
+        "web_cookie_title": "B站 Cookie 设置",
+        "web_cookie_loading": "检查中...",
+        "web_cookie_hint": "粘贴或上传 Bilibili 的 Cookie（Netscape 格式），用于下载需要登录的视频。可在浏览器中安装 \"Get cookies.txt LOCALLY\" 扩展导出。",
+        "web_cookie_configured": "已配置",
+        "web_cookie_not_configured": "未配置",
+        "web_cookie_upload": "上传文件",
+        "web_cookie_save": "保存",
+        "web_cookie_delete": "删除",
+        "web_cookie_saved": "Cookie 已保存",
+        "web_cookie_save_failed": "保存失败",
+        "web_cookie_deleted": "Cookie 已删除",
+        "web_cookie_empty": "Cookie 内容不能为空",
+
         # ── Progress ─────────────────────────────────────────
         "progress_stage_queued": "已排队",
         "progress_stage_preparing": "准备中",
@@ -370,6 +384,20 @@ MESSAGES: dict[str, dict[str, str]] = {
         "web_result_audio": "Audio",
         "web_result_video": "Video",
         "web_result_text": "Transcript Text",
+
+        # ── Cookie Settings ────────────────────────────────
+        "web_cookie_title": "Bilibili Cookie Settings",
+        "web_cookie_loading": "Checking...",
+        "web_cookie_hint": "Paste or upload your Bilibili cookie (Netscape format) to download videos that require login. Use a browser extension like \"Get cookies.txt LOCALLY\" to export.",
+        "web_cookie_configured": "Configured",
+        "web_cookie_not_configured": "Not configured",
+        "web_cookie_upload": "Upload file",
+        "web_cookie_save": "Save",
+        "web_cookie_delete": "Delete",
+        "web_cookie_saved": "Cookie saved",
+        "web_cookie_save_failed": "Save failed",
+        "web_cookie_deleted": "Cookie deleted",
+        "web_cookie_empty": "Cookie content cannot be empty",
 
         # ── Progress ─────────────────────────────────────────
         "progress_stage_queued": "Queued",

@@ -1,18 +1,23 @@
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, Form, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
+from b2t.config import Settings
 from b2t.database import AppDatabase
 from b2t.i18n import tr
 from b2t.inputs import parse_source_list
 from b2t.library import WorkspaceLibrary
 from b2t.models import TaskRecord
+from b2t.sse import SSEManager
 from b2t.tasks import TaskService
 
 
@@ -45,17 +50,29 @@ class TagRequest(BaseModel):
     tag_id: int | None = None
 
 
+class CookieContentRequest(BaseModel):
+    content: str
+
+
 def create_app(
     *,
     task_service: TaskService,
     library: WorkspaceLibrary,
     database: AppDatabase,
+    settings: Settings | None = None,
+    sse_manager: SSEManager | None = None,
     default_provider: str = "whisper",
     default_model: str = "small",
     language: str = "zh-CN",
 ) -> FastAPI:
     templates = Jinja2Templates(directory=str(Path(__file__).with_name("templates")))
     app = FastAPI(title="bili2text")
+
+    if sse_manager is not None:
+
+        @app.on_event("startup")
+        async def _bind_sse_loop() -> None:
+            sse_manager.bind_loop()
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
@@ -278,6 +295,38 @@ def create_app(
             raise HTTPException(status_code=404, detail="task not found")
         return JSONResponse({"items": database.list_task_events(task_id)})
 
+    @app.get("/api/tasks/{task_id}/stream")
+    async def stream_task_progress(task_id: str) -> StreamingResponse:
+        """SSE stream for a single task's progress updates."""
+        if sse_manager is None:
+            raise HTTPException(status_code=503, detail="SSE not available")
+        task = task_service.get_task(task_id)
+        if task is None:
+            raise HTTPException(status_code=404, detail="task not found")
+        history = database.list_task_events(task_id)
+        return StreamingResponse(
+            sse_manager.event_stream([task_id], history=history),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    @app.get("/api/tasks/stream")
+    async def stream_batch_progress(ids: str = Query("")) -> StreamingResponse:
+        """SSE stream for multiple tasks' progress updates."""
+        if sse_manager is None:
+            raise HTTPException(status_code=503, detail="SSE not available")
+        task_ids = [tid.strip() for tid in ids.split(",") if tid.strip()]
+        if not task_ids:
+            raise HTTPException(status_code=400, detail="no task ids provided")
+        history: list[dict] = []
+        for tid in task_ids:
+            history.extend(database.list_task_events(tid))
+        return StreamingResponse(
+            sse_manager.event_stream(task_ids, history=history),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
     @app.get("/api/videos")
     async def list_videos_api(
         query: str | None = Query(None),
@@ -406,6 +455,54 @@ def create_app(
         database.remove_video_tag(video_id, tag_id)
         return JSONResponse({"video_id": video_id, "tag_id": tag_id})
 
+    @app.get("/api/settings/cookie")
+    async def get_cookie_status() -> JSONResponse:
+        """Return cookie file status (existence, size, modified time) without
+        exposing the actual content."""
+        cookie_path = _resolve_cookie_path(settings)
+        if cookie_path is None or not cookie_path.exists():
+            return JSONResponse({"configured": False})
+        stat = cookie_path.stat()
+        return JSONResponse(
+            {
+                "configured": True,
+                "size": stat.st_size,
+                "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+            }
+        )
+
+    @app.post("/api/settings/cookie")
+    async def save_cookie_content(payload: CookieContentRequest) -> JSONResponse:
+        """Save pasted cookie text to the workspace cookies.txt."""
+        cookie_path = _resolve_cookie_path(settings, create_parent=True)
+        if cookie_path is None:
+            raise HTTPException(status_code=500, detail="workspace not configured")
+        content = payload.content.strip()
+        if not content:
+            raise HTTPException(status_code=400, detail="empty cookie content")
+        cookie_path.write_text(content, encoding="utf-8")
+        return JSONResponse({"saved": True, "path": str(cookie_path)})
+
+    @app.post("/api/settings/cookie/upload")
+    async def upload_cookie_file(file: UploadFile = File(...)) -> JSONResponse:
+        """Upload a cookies.txt file."""
+        cookie_path = _resolve_cookie_path(settings, create_parent=True)
+        if cookie_path is None:
+            raise HTTPException(status_code=500, detail="workspace not configured")
+        data = await file.read()
+        if not data:
+            raise HTTPException(status_code=400, detail="empty file")
+        cookie_path.write_bytes(data)
+        return JSONResponse({"saved": True, "path": str(cookie_path)})
+
+    @app.delete("/api/settings/cookie")
+    async def delete_cookie() -> JSONResponse:
+        """Delete the cookie file."""
+        cookie_path = _resolve_cookie_path(settings)
+        if cookie_path is not None and cookie_path.exists():
+            cookie_path.unlink()
+        return JSONResponse({"deleted": True})
+
     @app.get("/health")
     async def health() -> JSONResponse:
         return JSONResponse({"status": "ok"})
@@ -430,3 +527,16 @@ def _submit_transcription_tasks(
         )
         for source in sources
     ]
+
+
+def _resolve_cookie_path(settings: Settings | None, *, create_parent: bool = False) -> Path | None:
+    """Return the path where cookies.txt should live inside the workspace."""
+    if settings is None:
+        return None
+    if create_parent:
+        settings.ensure_directories()
+    # Honour the B2T_COOKIE_FILE env var for consistency with the downloader.
+    env_path = os.getenv("B2T_COOKIE_FILE")
+    if env_path:
+        return Path(env_path).expanduser()
+    return settings.workspace_root / "cookies.txt"

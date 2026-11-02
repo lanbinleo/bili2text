@@ -177,3 +177,6 @@ outputs/
 # Executable files
 *.exe
 .b2t/
+
+# Bilibili cookie credentials (contains sensitive session data)
+cookies.txt

@@ -4,6 +4,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
@@ -18,6 +19,9 @@ from b2t.inputs import parse_source_list
 from b2t.library import WorkspaceLibrary
 from b2t.tasks import TaskService
 from b2t.user_config import AppConfig
+
+if TYPE_CHECKING:
+    from b2t.sse import SSEManager
 
 
 def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
@@ -309,14 +313,20 @@ def _run_server(*, host: str, port: int, provider: str | None, model: str | None
         )
         raise typer.Exit(code=1) from exc
 
+    from b2t.sse import SSEManager
     from b2t.web import create_app
 
     settings, config = _load_runtime(workspace=workspace, provider=provider, model=model)
-    service = _build_task_service(settings=settings, config=config, provider=provider, model=model)
+    sse = SSEManager()
+    service = _build_task_service(
+        settings=settings, config=config, provider=provider, model=model, sse_manager=sse,
+    )
     app_instance = create_app(
         task_service=service,
         library=service.library,
         database=service.database,
+        settings=settings,
+        sse_manager=sse,
         default_provider=provider or config.default_provider,
         default_model=model or config.default_model,
         language=config.language,
@@ -341,6 +351,7 @@ def _build_task_service(
     config: AppConfig,
     provider: str | None = None,
     model: str | None = None,
+    sse_manager: "SSEManager | None" = None,
 ) -> TaskService:
     database = AppDatabase(settings)
     library = WorkspaceLibrary(settings, database)
@@ -353,6 +364,7 @@ def _build_task_service(
             provider=selected_provider or provider or config.default_provider,
             model=selected_model or model or config.default_model,
         ),
+        sse_manager=sse_manager,
     )
     service.ensure_indexed()
     return service

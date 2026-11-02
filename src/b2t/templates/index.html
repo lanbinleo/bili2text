@@ -36,6 +36,30 @@
       </form>
     </section>
 
+    <!-- Cookie Settings -->
+    <section class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <button id="cookie-toggle" class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition">
+        <div class="flex items-center gap-3">
+          <h2 class="text-lg font-medium">{{ t("web_cookie_title") }}</h2>
+          <span id="cookie-badge" class="text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-500">{{ t("web_cookie_loading") }}</span>
+        </div>
+        <svg id="cookie-chevron" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      <div id="cookie-panel" class="hidden border-t border-gray-200 px-6 py-4 space-y-4">
+        <p class="text-sm text-gray-500">{{ t("web_cookie_hint") }}</p>
+        <textarea id="cookie-content" rows="6" placeholder="# Netscape HTTP Cookie File&#10;.bilibili.com  TRUE  /  FALSE  0  SESSDATA  xxx" class="w-full rounded border px-3 py-2 font-mono text-xs"></textarea>
+        <div class="flex items-center gap-3">
+          <label class="rounded border px-4 py-2 text-sm cursor-pointer hover:bg-gray-50">
+            {{ t("web_cookie_upload") }}
+            <input id="cookie-file" type="file" accept=".txt" class="hidden">
+          </label>
+          <button id="cookie-save" class="rounded bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700">{{ t("web_cookie_save") }}</button>
+          <button id="cookie-delete" class="rounded border border-red-300 px-4 py-2 text-sm text-red-600 hover:bg-red-50">{{ t("web_cookie_delete") }}</button>
+        </div>
+        <p id="cookie-msg" class="text-sm hidden"></p>
+      </div>
+    </section>
+
     <section class="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-medium">Videos</h2>
@@ -47,7 +71,7 @@
           <div class="flex items-center justify-between gap-4">
             <div class="min-w-0">
               <p class="font-medium truncate">{{ video.title }}</p>
-              <p class="text-sm text-gray-500">{{ video.engine }} · {{ video.model }}</p>
+              <p class="text-sm text-gray-500">{{ video.engine }} &middot; {{ video.model }}</p>
             </div>
             <div class="text-right text-sm text-gray-500">
               {% if video.category_name %}
@@ -63,5 +87,74 @@
       </div>
     </section>
   </main>
+
+  <script>
+    /* ── Cookie panel toggle ── */
+    const toggle = document.getElementById("cookie-toggle");
+    const panel = document.getElementById("cookie-panel");
+    const chevron = document.getElementById("cookie-chevron");
+    toggle.addEventListener("click", () => {
+      panel.classList.toggle("hidden");
+      chevron.classList.toggle("rotate-180");
+    });
+
+    /* ── Cookie API helpers ── */
+    const badge = document.getElementById("cookie-badge");
+    const msgEl = document.getElementById("cookie-msg");
+
+    function showMsg(text, ok) {
+      msgEl.textContent = text;
+      msgEl.className = `text-sm ${ok ? "text-green-600" : "text-red-600"}`;
+      msgEl.classList.remove("hidden");
+      setTimeout(() => msgEl.classList.add("hidden"), 4000);
+    }
+
+    async function loadStatus() {
+      try {
+        const res = await fetch("/api/settings/cookie");
+        const data = await res.json();
+        if (data.configured) {
+          badge.textContent = "{{ t('web_cookie_configured') }}";
+          badge.className = "text-xs rounded-full px-2 py-0.5 bg-green-100 text-green-700";
+        } else {
+          badge.textContent = "{{ t('web_cookie_not_configured') }}";
+          badge.className = "text-xs rounded-full px-2 py-0.5 bg-gray-100 text-gray-500";
+        }
+      } catch {
+        badge.textContent = "?";
+      }
+    }
+    loadStatus();
+
+    /* ── File upload ── */
+    document.getElementById("cookie-file").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/settings/cookie/upload", { method: "POST", body: fd });
+      if (res.ok) { showMsg("{{ t('web_cookie_saved') }}", true); loadStatus(); }
+      else showMsg("{{ t('web_cookie_save_failed') }}", false);
+    });
+
+    /* ── Paste save ── */
+    document.getElementById("cookie-save").addEventListener("click", async () => {
+      const content = document.getElementById("cookie-content").value;
+      if (!content.trim()) { showMsg("{{ t('web_cookie_empty') }}", false); return; }
+      const res = await fetch("/api/settings/cookie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (res.ok) { showMsg("{{ t('web_cookie_saved') }}", true); loadStatus(); }
+      else showMsg("{{ t('web_cookie_save_failed') }}", false);
+    });
+
+    /* ── Delete ── */
+    document.getElementById("cookie-delete").addEventListener("click", async () => {
+      const res = await fetch("/api/settings/cookie", { method: "DELETE" });
+      if (res.ok) { showMsg("{{ t('web_cookie_deleted') }}", true); loadStatus(); }
+    });
+  </script>
 </body>
 </html>
