@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Download & Engines
+
+- **behavior change**: downloads keep audio only by default; pass `--keep-video` or set `B2T_KEEP_VIDEO=1` to keep the video file
+- added `--cookies-from-browser` (and the `B2T_COOKIES_FROM_BROWSER` env var) to extract login cookies straight from a browser profile, mitigating Bilibili 412 anti-bot errors
+- SenseVoice now auto-detects the official quantized model (`model_quant.onnx`) and reports missing files before loading
+- local Whisper engine supports Apple Silicon MPS (GPU) with automatic CPU fallback and a notice
+- MiMo engine: documented that `--prompt` has no effect; fatal 4xx errors (invalid key, etc.) now fail immediately instead of burning backoff retries
+
 ### Batch Transcription
 
 - added `bili2text batch` for submitting multiple inputs from arguments or a text file

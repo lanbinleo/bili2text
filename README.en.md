@@ -94,6 +94,18 @@ Specify an engine and model:
 uv run bili2text tx "BV1kfDTBXEfu" --provider whisper --model medium
 ```
 
+Downloads keep audio only by default (transcription never needs the video track, and audio is roughly 25x smaller). Pass `--keep-video` — or set `B2T_KEEP_VIDEO=1` — when you want the video file too:
+
+```bash
+uv run bili2text tx "BV1kfDTBXEfu" --keep-video
+```
+
+For videos that require login, extract cookies straight from a browser profile (`chrome`/`firefox`/`edge`/`brave`, optionally with a profile name like `firefox:default`):
+
+```bash
+uv run bili2text tx "BV1kfDTBXEfu" --cookies-from-browser chrome
+```
+
 Submit multiple inputs in one batch:
 
 ```bash
@@ -122,6 +134,8 @@ uv run bili2text tx "BV1kfDTBXEfu" --provider mimo --workers 6
 ```
 
 Pushing concurrency too high gets you rate-limited (HTTP 429). Individual chunks retry with backoff, and successful chunks are cached under `.b2t/cache/mimo/` keyed by audio content — so re-running an interrupted job **only pays for what is missing**.
+
+Note: `--prompt` has no effect on the MiMo engine (the ASR model takes no text instructions; language comes from the `mimo.language` config), and fatal 4xx errors such as an invalid API key fail immediately instead of burning through retries.
 
 ## Commands
 

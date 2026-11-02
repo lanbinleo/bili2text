@@ -18,6 +18,18 @@ _DEFAULT_INSTRUCTION = (
 )
 
 
+def _is_retryable(exc: Exception) -> bool:
+    """只重试值得重试的：限流（429）、服务端错误（5xx）和无 status_code 的传输类异常。
+
+    带 4xx status_code 的（openai SDK 的 AuthenticationError/BadRequestError 等）
+    重试多少次结果都一样，快速失败比白等几十秒退避好。
+    """
+    status = getattr(exc, "status_code", None)
+    if isinstance(status, int):
+        return status == 429 or status >= 500
+    return True
+
+
 class MimoTranscriber(Transcriber):
     name = "mimo"
 
@@ -261,8 +273,12 @@ class MimoTranscriber(Transcriber):
                     ],
                     extra_body={"asr_options": {"language": self.language or "auto"}},
                 )
-            except Exception as exc:  # noqa: BLE001 - retry on any transport/rate-limit error
+            except Exception as exc:  # noqa: BLE001 - transport/rate-limit errors only; fatal 4xx raises below
                 last_error = exc
+                if not _is_retryable(exc):
+                    raise RuntimeError(
+                        f"MiMo transcription failed for {chunk_path.name}: {exc}"
+                    ) from exc
                 if attempt < self.max_retries - 1:
                     time.sleep(5 * (attempt + 1))
                 continue
