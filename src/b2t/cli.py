@@ -49,6 +49,12 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
         prompt: str = typer.Option("", "--prompt", help=tr(language, "opt_prompt_help")),
         output: Path | None = typer.Option(None, "--output", help=tr(language, "opt_output_help")),
         workspace: Path | None = typer.Option(None, "--workspace", help=tr(language, "opt_workspace_help")),
+        cookies_from_browser: str | None = typer.Option(
+            None,
+            "--cookies-from-browser",
+            "-C",
+            help=tr(language, "opt_cookies_from_browser_help"),
+        ),
     ) -> None:
         """Download or open media, then transcribe it with the selected provider."""
         try:
@@ -59,6 +65,7 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
                 config=config,
                 provider=provider,
                 model=model,
+                cookies_from_browser=cookies_from_browser,
             )
             task = service.submit_transcription(
                 source=source,
@@ -91,6 +98,12 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
         model: str | None = typer.Option(None, "--model", help=tr(language, "opt_model_help")),
         prompt: str = typer.Option("", "--prompt", help=tr(language, "opt_prompt_help")),
         workspace: Path | None = typer.Option(None, "--workspace", help=tr(language, "opt_workspace_help")),
+        cookies_from_browser: str | None = typer.Option(
+            None,
+            "--cookies-from-browser",
+            "-C",
+            help=tr(language, "opt_cookies_from_browser_help"),
+        ),
     ) -> None:
         """Submit multiple transcription tasks from arguments or a newline-separated file."""
         selected_language = _detect_preferred_language(workspace)
@@ -101,6 +114,7 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
                 config=config,
                 provider=provider,
                 model=model,
+                cookies_from_browser=cookies_from_browser,
             )
             source_values = _collect_batch_sources(sources or [], source_file)
             tasks = [
@@ -341,6 +355,7 @@ def _build_task_service(
     config: AppConfig,
     provider: str | None = None,
     model: str | None = None,
+    cookies_from_browser: str | None = None,
 ) -> TaskService:
     database = AppDatabase(settings)
     library = WorkspaceLibrary(settings, database)
@@ -352,6 +367,7 @@ def _build_task_service(
             config=config,
             provider=selected_provider or provider or config.default_provider,
             model=selected_model or model or config.default_model,
+            cookies_from_browser=cookies_from_browser,
         ),
     )
     service.ensure_indexed()

@@ -124,3 +124,68 @@ def test_ytdlp_options_env_cookie_file_takes_priority(tmp_path, monkeypatch) -> 
     opts = YtDlpDownloader()._build_ydl_opts(source, settings)
 
     assert opts["cookiefile"] == str(env_cookie_file)
+
+
+def test_ytdlp_options_cookies_from_browser_constructor(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("B2T_COOKIES_FROM_BROWSER", raising=False)
+    settings = Settings.from_workspace(tmp_path / ".b2t")
+    source = SourceRef(
+        raw_input="BV1xx411c7XD",
+        kind="bilibili",
+        display_name="BV1xx411c7XD",
+        bv="BV1xx411c7XD",
+        url="https://www.bilibili.com/video/BV1xx411c7XD",
+    )
+
+    opts = YtDlpDownloader(cookies_from_browser="chrome")._build_ydl_opts(source, settings)
+
+    assert opts["cookiesfrombrowser"] == ("chrome",)
+
+
+def test_ytdlp_options_cookies_from_browser_env_var(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("B2T_COOKIES_FROM_BROWSER", "firefox")
+    settings = Settings.from_workspace(tmp_path / ".b2t")
+    source = SourceRef(
+        raw_input="BV1xx411c7XD",
+        kind="bilibili",
+        display_name="BV1xx411c7XD",
+        bv="BV1xx411c7XD",
+        url="https://www.bilibili.com/video/BV1xx411c7XD",
+    )
+
+    opts = YtDlpDownloader()._build_ydl_opts(source, settings)
+
+    assert opts["cookiesfrombrowser"] == ("firefox",)
+
+
+def test_ytdlp_options_cookies_from_browser_constructor_overrides_env(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("B2T_COOKIES_FROM_BROWSER", "firefox")
+    settings = Settings.from_workspace(tmp_path / ".b2t")
+    source = SourceRef(
+        raw_input="BV1xx411c7XD",
+        kind="bilibili",
+        display_name="BV1xx411c7XD",
+        bv="BV1xx411c7XD",
+        url="https://www.bilibili.com/video/BV1xx411c7XD",
+    )
+
+    opts = YtDlpDownloader(cookies_from_browser="chrome")._build_ydl_opts(source, settings)
+
+    # Constructor arg takes priority over env var
+    assert opts["cookiesfrombrowser"] == ("chrome",)
+
+
+def test_ytdlp_options_no_cookies_from_browser_by_default(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("B2T_COOKIES_FROM_BROWSER", raising=False)
+    settings = Settings.from_workspace(tmp_path / ".b2t")
+    source = SourceRef(
+        raw_input="BV1xx411c7XD",
+        kind="bilibili",
+        display_name="BV1xx411c7XD",
+        bv="BV1xx411c7XD",
+        url="https://www.bilibili.com/video/BV1xx411c7XD",
+    )
+
+    opts = YtDlpDownloader()._build_ydl_opts(source, settings)
+
+    assert "cookiesfrombrowser" not in opts

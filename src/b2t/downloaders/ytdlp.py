@@ -12,6 +12,9 @@ from b2t.models import DownloadResult, SourceRef
 class YtDlpDownloader(Downloader):
     name = "yt-dlp"
 
+    def __init__(self, cookies_from_browser: str | None = None) -> None:
+        self.cookies_from_browser = cookies_from_browser
+
     def download(
         self,
         source: SourceRef,
@@ -94,6 +97,14 @@ class YtDlpDownloader(Downloader):
             cookie_path = settings.workspace_root / "cookies.txt"
         if cookie_path.exists():
             ydl_opts["cookiefile"] = str(cookie_path)
+
+        # --cookies-from-browser extracts live cookies directly from a
+        # browser profile, which is more reliable than a static cookies.txt
+        # for bypassing Bilibili's anti-bot (WBI) checks.
+        # Priority: constructor arg > B2T_COOKIES_FROM_BROWSER env var.
+        cfbr = self.cookies_from_browser or os.getenv("B2T_COOKIES_FROM_BROWSER")
+        if cfbr:
+            ydl_opts["cookiesfrombrowser"] = (cfbr,)
 
         # Bilibili's CDN frequently blocks proxy/VPN nodes, causing 412
         # or SSL errors. Direct connections usually work better.

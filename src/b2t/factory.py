@@ -15,6 +15,7 @@ def build_pipeline(
     config: AppConfig,
     provider: str | None = None,
     model: str | None = None,
+    cookies_from_browser: str | None = None,
 ) -> B2TPipeline:
     selected_provider = (provider or config.default_provider).strip().lower()
     selected_model = (model or config.default_model).strip()
@@ -48,6 +49,6 @@ def build_pipeline(
 
     return B2TPipeline(
         settings=settings,
-        downloader=YtDlpDownloader(),
+        downloader=YtDlpDownloader(cookies_from_browser=cookies_from_browser),
         transcriber=transcriber,
     )

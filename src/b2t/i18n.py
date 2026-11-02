@@ -34,6 +34,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "opt_port_help": "监听端口。",
         "opt_language_help": "语言代码，如 zh-CN、en-US。",
         "opt_source_file_help": "包含批量输入的文本文件，每行一个。",
+        "opt_cookies_from_browser_help": "从浏览器提取登录态 Cookie 以绕过 Bilibili 反爬检测。示例: chrome、firefox、edge、brave，或 firefox:default。",
 
         # ── Runtime messages ─────────────────────────────────
         "missing_dependency": "缺少依赖 '{name}'。{guidance}",
@@ -224,6 +225,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "opt_port_help": "Bind port.",
         "opt_language_help": "Language code, e.g. zh-CN or en-US.",
         "opt_source_file_help": "Text file containing one batch input per line.",
+        "opt_cookies_from_browser_help": "Extract browser cookies to bypass Bilibili anti-bot protection. e.g. chrome, firefox, edge, brave, or firefox:default.",
 
         # ── Runtime messages ─────────────────────────────────
         "missing_dependency": "Missing dependency '{name}'. {guidance}",
