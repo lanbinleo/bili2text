@@ -116,6 +116,28 @@ uv run bili2text batch --file sources.txt
 uv run bili2text --help
 ```
 
+## Shell 命令补全
+
+bili2text 内置 shell 补全，支持 Bash、Zsh、Fish、PowerShell。安装一次后，输入命令时按 Tab 即可补全子命令和参数：
+
+```bash
+bili2text --install-completion
+```
+
+安装后重开终端（或按提示刷新 shell 配置）即可生效。
+
+如果补全脚本安装到了非默认位置，或者你用的是 `uv run` 方式运行，也可以手动生成脚本并 source：
+
+```bash
+# Bash
+bili2text --show-completion bash > ~/.bili2text-complete.bash
+echo 'source ~/.bili2text-complete.bash' >> ~/.bashrc
+
+# Zsh
+bili2text --show-completion zsh > ~/.bili2text-complete.zsh
+echo 'source ~/.bili2text-complete.zsh' >> ~/.zshrc
+```
+
 ## Web 界面 & 服务模式
 
 启动 Web 界面（浏览器访问）：
