@@ -55,8 +55,11 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
             "-C",
             help=tr(language, "opt_cookies_from_browser_help"),
         ),
+        keep_video: bool = typer.Option(False, "--keep-video", help=tr(language, "opt_keep_video_help")),
     ) -> None:
         """Download or open media, then transcribe it with the selected provider."""
+        if keep_video:
+            os.environ["B2T_KEEP_VIDEO"] = "1"
         try:
             settings, config = _load_runtime(workspace=workspace, provider=provider, model=model)
             renderer = TqdmTaskRenderer(config.language)
@@ -104,8 +107,11 @@ def create_app(language: str = DEFAULT_LANGUAGE) -> typer.Typer:
             "-C",
             help=tr(language, "opt_cookies_from_browser_help"),
         ),
+        keep_video: bool = typer.Option(False, "--keep-video", help=tr(language, "opt_keep_video_help")),
     ) -> None:
         """Submit multiple transcription tasks from arguments or a newline-separated file."""
+        if keep_video:
+            os.environ["B2T_KEEP_VIDEO"] = "1"
         selected_language = _detect_preferred_language(workspace)
         try:
             settings, config = _load_runtime(workspace=workspace, provider=provider, model=model)

@@ -34,7 +34,9 @@ class LocalWhisperTranscriber(Transcriber):
             # `verbose=False` keeps Whisper text output quiet while still driving the internal tqdm loop.
             "verbose": False,
         }
-        if self.device == "cpu":
+        if self.device in ("cpu", "mps"):
+            # fp16 is NaN-prone on some MPS/torch builds and Whisper re-casts
+            # weights per forward pass anyway; fp32 is the safe choice off CUDA.
             transcribe_options["fp16"] = False
         with whisper_progress(progress):
             result = model.transcribe(str(audio_path), **transcribe_options)
@@ -52,13 +54,30 @@ class LocalWhisperTranscriber(Transcriber):
             return self._model
 
         try:
+            import torch
             import whisper
         except ImportError as exc:
             raise RuntimeError(build_whisper_import_error_message()) from exc
 
         if self.device is None:
-            self.device = "cuda" if whisper.torch.cuda.is_available() else "cpu"
-        self._model = whisper.load_model(self.model_name, device=self.device)
+            if torch.cuda.is_available():
+                self.device = "cuda"
+            elif torch.backends.mps.is_available():
+                # Apple Silicon GPU (Metal Performance Shaders).
+                self.device = "mps"
+            else:
+                self.device = "cpu"
+
+        if self.device == "mps":
+            # Whisper registers alignment_heads as a sparse buffer, which some
+            # torch builds cannot move to MPS (NotImplementedError at load).
+            try:
+                self._model = whisper.load_model(self.model_name, device="mps")
+            except Exception:
+                self.device = "cpu"
+                self._model = whisper.load_model(self.model_name, device="cpu")
+        else:
+            self._model = whisper.load_model(self.model_name, device=self.device)
         return self._model
 
 
