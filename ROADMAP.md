@@ -11,7 +11,7 @@ v0.4.0（2026-11-03）已发布，打包与发布链路也已补上：
 - 双语 CHANGELOG 落日期，并补齐 0.3.0 之后的全部变更
 - README / DEVELOPMENT / API 文档同步
 - 修掉了一个只在 Windows + PowerShell 下失败的工具测试
-- 补上 CI 与发版打包 workflow（见下）
+- 补上 CI 与发版打包 workflow（见下），v0.4.0 的 wheel / sdist 已补传到 Release
 
 后续发版清单：改三处版本号 → 双语 CHANGELOG 落日期 → `uv lock` → 跑测试 → 打 tag →
 `gh release create`。发布后 `release.yml` 会自动构建 wheel / sdist 并附加到 Release，
