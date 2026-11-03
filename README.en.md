@@ -53,6 +53,8 @@ uv sync --extra whisper --extra web
 
 Available extras: `whisper`, `sensevoice`, `volcengine`, `mimo`, `web`, `server`.
 
+> Note: put every extra in the same command (e.g. `uv sync --extra whisper --extra web`). Running separate `uv sync` calls overrides each other — the later one removes packages installed by the earlier one.
+
 #### Prepare the SenseVoice ONNX model
 
 When using SenseVoice, download [`iic/SenseVoiceSmall-onnx`](https://modelscope.cn/models/iic/SenseVoiceSmall-onnx) to a local directory. That ONNX repository does not include the required `chn_jpn_yue_eng_ko_spectok.bpe.model`; download the file with that name from [`iic/SenseVoiceSmall`](https://modelscope.cn/models/iic/SenseVoiceSmall) and place it in the same directory. The final directory must contain at least:
@@ -106,6 +108,8 @@ For videos that require login, extract cookies straight from a browser profile (
 uv run bili2text tx "BV1kfDTBXEfu" --cookies-from-browser chrome
 ```
 
+You can also place a `cookies.txt` in the workspace (or point `B2T_COOKIE_FILE` at one). On top of that, bili2text bypasses system proxies by default when talking to Bilibili CDNs (proxy nodes often trigger 412 / SSL errors); set `B2T_USE_PROXY=1` if you need one.
+
 Submit multiple inputs in one batch:
 
 ```bash
@@ -116,6 +120,12 @@ Or put one BV, URL, or local file path per line:
 
 ```bash
 uv run bili2text batch --file sources.txt
+```
+
+For multi-part videos, include `?p=N` in the URL to process only that part:
+
+```bash
+uv run bili2text tx "https://www.bilibili.com/video/BV1xx411c7XD?p=2"
 ```
 
 ### MiMo cloud transcription
@@ -189,6 +199,10 @@ Run in server mode (good for Docker or LAN deployment):
 ```bash
 uv run bili2text srv --host 0.0.0.0 --port 8000
 ```
+
+Besides submitting transcriptions, the web UI offers task progress, a searchable video library, categories and tags, transcript editing, and switching between historical versions.
+
+*Note: the project is not yet optimized for long-running Docker/server deployments — use it locally for now.*
 
 ## Development
 

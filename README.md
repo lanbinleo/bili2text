@@ -60,6 +60,8 @@ uv sync --extra whisper --extra web
 
 可选的 extras：`whisper`、`sensevoice`、`volcengine`、`mimo`、`web`、`server`。可以暂时不用安装，详看下方的初始化文档。
 
+> 注意：多个 extra 要写在同一条命令里（如 `uv sync --extra whisper --extra web`）。分成多条 `uv sync` 执行会互相覆盖，后一条会把前一条装上的依赖移除。
+
 #### 准备 SenseVoice ONNX 模型
 
 选择 SenseVoice 时，先下载 [`iic/SenseVoiceSmall-onnx`](https://modelscope.cn/models/iic/SenseVoiceSmall-onnx) 到本地目录。该 ONNX 仓库缺少运行时必需的 `chn_jpn_yue_eng_ko_spectok.bpe.model`，还需要从 [`iic/SenseVoiceSmall`](https://modelscope.cn/models/iic/SenseVoiceSmall) 下载这个同名文件，并放进同一目录。最终目录至少应包含：
@@ -113,6 +115,8 @@ uv run bili2text tx "BV1kfDTBXEfu" --keep-video
 uv run bili2text tx "BV1kfDTBXEfu" --cookies-from-browser chrome
 ```
 
+也可以把 Cookie 存成 `cookies.txt` 放进工作区（或用 `B2T_COOKIE_FILE` 指定路径）。此外，bili2text 默认绕过系统代理直连 B 站 CDN（代理节点常触发 412 / SSL 错误），需要走代理时设置 `B2T_USE_PROXY=1`。
+
 批量提交多条输入：
 
 ```bash
@@ -123,6 +127,12 @@ uv run bili2text batch "BV1kfDTBXEfu" "https://www.bilibili.com/video/BV1xx411c7
 
 ```bash
 uv run bili2text batch --file sources.txt
+```
+
+转写多分P视频时，链接里带上 `?p=N` 即可只处理指定分P：
+
+```bash
+uv run bili2text tx "https://www.bilibili.com/video/BV1xx411c7XD?p=2"
 ```
 
 ### MiMo 云端转写
@@ -196,6 +206,8 @@ uv run bili2text ui
 ```bash
 uv run bili2text srv --host 0.0.0.0 --port 8000
 ```
+
+Web 界面除了提交转写，还提供任务进度、视频库检索、分类与标签、文本编辑和历史版本切换。
 
 *注意，项目暂时未对Docker或服务器类型的长时间运行做任何优化，请暂时使用本地端*
 

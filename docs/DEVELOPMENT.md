@@ -14,13 +14,22 @@
 ```text
 src/b2t/
   cli.py            CLI 入口
+  cli_progress.py   命令行进度输出
   bootstrap.py      首次启动向导
   user_config.py    本地配置读写
+  config.py         工作区目录与运行时设置
+  inputs.py         输入解析（BV / 链接 / 本地文件 / 分P）
+  models.py         核心数据模型
+  database.py       SQLite 索引
+  tasks.py          后台任务服务
+  progress.py       任务进度与事件快照
+  library.py        视频库与文本版本管理
   pipeline.py       核心转写流程
   factory.py        Provider / Downloader 组装
   downloaders/      下载实现
   transcribers/     转写 Provider
-  templates/        朴素 Web 模板
+  templates/        Web 模板
+  web.py            Web / API 入口
   window_app.py     Tk Feature
 tests/              自动化测试
 assets/             logo、截图、favicon 等素材
@@ -35,11 +44,13 @@ archive/            旧版脚本与历史文件
 uv sync --extra whisper --extra web
 ```
 
-如需 SenseVoice / 火山引擎：
+如需 SenseVoice / 火山引擎 / MiMo：
 
 ```bash
-uv sync --extra sensevoice --extra volcengine
+uv sync --extra sensevoice --extra volcengine --extra mimo
 ```
+
+注意：多个 extra 一定要写在同一条 `uv sync` 命令里，分成多条执行会互相覆盖。
 
 更推荐直接用 Bootstrap 管理组合环境：
 
@@ -52,13 +63,17 @@ uv run bili2text bootstrap --sync-only
 
 ```bash
 uv run bili2text --help
+uv run bili2text --version
 uv run bili2text doctor
 uv run bili2text bootstrap
 uv run bili2text tx "<bilibili-url>"
+uv run bili2text batch "BV1xx411c7XD" "BV1yy411c7XD"
 uv run bili2text ui
 uv run bili2text win
-pytest -q
+uv run pytest -q
 ```
+
+跑测试前需要先装齐相关 extras（如 `uv sync --extra web --extra volcengine --extra mimo`）。
 
 ## 配置机制
 
@@ -77,6 +92,10 @@ pytest -q
 - `default_model`
 - `sensevoice.*`
 - `volcengine.*`
+- `mimo.*`（`api_key` / `base_url` / `model_name` / `language` / `workers`）
+
+另外这些是环境变量而不是配置文件项：`B2T_HOME`、`B2T_KEEP_VIDEO`、`B2T_COOKIE_FILE`、
+`B2T_COOKIES_FROM_BROWSER`、`B2T_USE_PROXY`。
 
 ## Provider 约定
 
@@ -115,9 +134,10 @@ pytest -q
 
 ## 后续建议
 
-接下来继续推进时，优先顺序建议为：
+发版后的优先顺序建议为：
 
-1. 继续完善 Provider 抽象与错误处理
-2. 补充更多自动化测试
-3. 为 Server Mode 增加更稳定的部署说明
-4. 让 Web UI 继续保持结构简单，等待设计稿接管
+1. 补上 CI（GitHub Actions，至少覆盖 ubuntu + windows），避免继续靠本地手测
+2. 合入 issue #98 评论区的「补丁 B」：给 B 站请求加 `Referer` + 浏览器 UA
+3. 接手或关闭 PR #94（SSE + Cookie UI），该分支自 2026-06-22 起已停滞
+4. 继续清理 MiMo / `--keep-video` 的实现细节（见 `ROADMAP.md`）
+5. 为 Server Mode 增加更稳定的部署说明

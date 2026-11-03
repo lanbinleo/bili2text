@@ -1,29 +1,45 @@
 # Changelog
 
-## Unreleased
+## 2026-11-03 (v0.4.0)
 
-### Download & Engines
+### Behavior changes
 
-- **behavior change**: downloads keep audio only by default; pass `--keep-video` or set `B2T_KEEP_VIDEO=1` to keep the video file
-- added `--cookies-from-browser` (and the `B2T_COOKIES_FROM_BROWSER` env var) to extract login cookies straight from a browser profile, mitigating Bilibili 412 anti-bot errors
-- SenseVoice now auto-detects the official quantized model (`model_quant.onnx`) and reports missing files before loading
-- fixed the SenseVoice ITN switch being silently ignored under funasr-onnx 0.4.1 (the kwarg was renamed to `textnorm`, issue #105)
+- downloads keep audio only by default; pass `--keep-video` or set `B2T_KEEP_VIDEO=1` to keep the video file
+
+### New features
+
+- added `bili2text batch` for submitting multiple inputs from arguments or a text file; the web UI and API accept multiline batches, and the desktop window processes pasted multiline sources one by one
+- multi-part Bilibili videos are supported: a URL with `?p=N` downloads and transcribes only that part
+- added `--cookies-from-browser` (and `B2T_COOKIES_FROM_BROWSER`) to extract login cookies straight from a browser profile, mitigating Bilibili 412 anti-bot errors
+- added support for a login cookie file: `workspace/cookies.txt`, or a path given by `B2T_COOKIE_FILE`
+- system proxies are bypassed by default when talking to Bilibili CDNs (proxy nodes often trigger 412 / SSL errors); set `B2T_USE_PROXY=1` to keep using one
 - local Whisper engine supports Apple Silicon MPS (GPU) with automatic CPU fallback and a notice
-- MiMo engine: documented that `--prompt` has no effect; fatal 4xx errors (invalid key, etc.) now fail immediately instead of burning backoff retries
+- built-in shell completion (Bash / Zsh / Fish / PowerShell): `bili2text --install-completion`
+- completed the web/API surface: persisted tasks with progress/event queries, video library search, categories and tags, transcript version management and activation (see `docs/API.md`)
 
-### Batch Transcription
+### MiMo transcription engine
 
-- added `bili2text batch` for submitting multiple inputs from arguments or a text file
-- added multiline batch submission to the web UI and API
-- added multiline batch processing to the desktop window
-
-### MiMo Transcription Engine
-
-- added Xiaomi MiMo (`mimo-v2.5-asr`) as a cloud engine, using OpenAI-compatible chat completions with `input_audio`
+- added Xiaomi MiMo (`mimo-v2.5-asr`) as a cloud engine over an OpenAI-compatible chat completions + `input_audio` protocol
 - long audio is split into 60s chunks and transcribed concurrently; added `--workers` and the `mimo.workers` config key (default 4)
 - chunks retry with backoff so a single rate-limit response cannot discard a long job
 - successful chunks are cached under `.b2t/cache/mimo/` keyed by audio content, so a re-run after an interruption only transcribes what is missing
-- fixed a crash when indexing local-file transcriptions whose `download` metadata is `None`
+- documented that `--prompt` has no effect on MiMo
+
+### Fixes
+
+- SenseVoice now auto-detects the official quantized model (`model_quant.onnx`) and reports missing files before loading
+- fixed the SenseVoice ITN switch being silently ignored under funasr-onnx 0.4.1 (the kwarg was renamed to `textnorm`; issue #105)
+- fixed a crash when indexing local-file transcriptions whose `download` metadata is `None` (issue #100)
+- fixed Volcengine transcription calling the wrong API: switched to the flash API with the correct headers and credentials
+- fixed GBK-decoded subprocess output breaking ffmpeg / uv on Windows; all calls now use UTF-8
+- MiMo: fatal 4xx errors (invalid key, etc.) now fail immediately instead of burning backoff retries
+- missing dependencies now show the matching `uv sync --extra ...` hint, and a broken Whisper environment is detected with a rebuild notice
+
+### Docs & maintenance
+
+- updated both READMEs with multi-part, cookie file, proxy switch, MiMo, and shell completion usage
+- added `ROADMAP.md` maintainer roadmap
+- bumped `yt-dlp` to 2026.7.4
 
 ## 2026-04-10 (v0.3.0)
 
