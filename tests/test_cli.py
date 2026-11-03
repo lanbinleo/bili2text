@@ -1,9 +1,17 @@
+import re
+
 from typer.testing import CliRunner
 
 from b2t.cli import app
 
 
 runner = CliRunner()
+ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _plain(text: str) -> str:
+    """Strip ANSI styling (GitHub Actions renders help with extra style spans)."""
+    return ANSI_RE.sub("", text)
 
 
 def test_cli_help_renders() -> None:
@@ -45,8 +53,9 @@ def test_bootstrap_sync_only_requires_existing_config(tmp_path) -> None:
 def test_shell_completion_is_available() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
-    assert "--install-completion" in result.stdout
-    assert "--show-completion" in result.stdout
+    help_text = _plain(result.stdout)
+    assert "--install-completion" in help_text
+    assert "--show-completion" in help_text
 
     result = runner.invoke(app, ["--show-completion"])
     assert result.exit_code == 0
