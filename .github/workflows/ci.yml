@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10", "3.12"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Check the lockfile is up to date
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        run: uv lock --check
+
+      - name: Install dependencies
+        run: uv sync --frozen --extra web --extra volcengine --extra mimo
+
+      - name: Run tests
+        run: uv run --frozen python -m pytest -q
+
+  package:
+    name: build package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Verify artifacts
+        run: |
+          uv venv "$RUNNER_TEMP/verify"
+          uv pip install --python "$RUNNER_TEMP/verify/bin/python" dist/*.whl
+          "$RUNNER_TEMP/verify/bin/bili2text" --version
+          "$RUNNER_TEMP/verify/bin/bili2text" --help > /dev/null
+          python3 scripts/check_dist.py
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error

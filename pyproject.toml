@@ -62,3 +62,13 @@ testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/b2t"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.b2t",
+  "/.pytest_cache",
+  "/.uv-cache",
+  "/.venv*",
+  "/dist",
+  "**/__pycache__",
+]

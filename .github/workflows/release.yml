@@ -1,0 +1,66 @@
+name: Release Build
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and attach to its release (e.g. v0.4.0). Leave empty to only build artifacts."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build and attach release assets
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # Release events build the tagged commit; manual dispatches build the
+          # branch the workflow runs from (used to back-fill assets for an
+          # existing release, guarded by the version check below).
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Check that the tag matches the project version
+        if: env.RELEASE_TAG != ''
+        run: |
+          VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          echo "pyproject version: $VERSION / release tag: $RELEASE_TAG"
+          test "v$VERSION" = "$RELEASE_TAG"
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Verify artifacts
+        run: |
+          uv venv "$RUNNER_TEMP/verify"
+          uv pip install --python "$RUNNER_TEMP/verify/bin/python" dist/*.whl
+          "$RUNNER_TEMP/verify/bin/bili2text" --version
+          "$RUNNER_TEMP/verify/bin/bili2text" --help > /dev/null
+          python3 scripts/check_dist.py
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Attach artifacts to the GitHub Release
+        if: env.RELEASE_TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" dist/* --clobber
