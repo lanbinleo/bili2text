@@ -31,6 +31,17 @@ v0.4.0（2026-11-03）已发布，打包与发布链路也已补上：
 
 ## 🟡 已识别、值得排期的小改进
 
+### 已建 issue（2026-11-03 复查遗留问题）
+
+- [ ] **#112 非 whisper provider 默认 model 串台**：volcengine 会收到 `model_name=small`，
+      sensevoice 会把 `small` 当模型目录（源自 #87 后续评论）
+- [ ] **#113 Web / 桌面窗口缺 MiMo 选项**：provider 列表与 CLI 不同步，model 也不随 provider 联动
+- [ ] **#114 下载复用**：已下载过的视频默认跳过，新增强制重下开关（#39 关闭时的承诺）
+- [ ] **#115 SenseVoice 模型自动下载**：支持填 ModelScope 模型名（#101 建议 2）
+- [ ] **#116 文档补齐**：ffmpeg 必需依赖 + Intel Mac 平台限制
+
+### 常规项
+
 - [ ] **吸收 #98 评论区的「补丁 B」**：给 B 站请求加 `Referer: https://www.bilibili.com/` +
       浏览器 UA，几行代码，低成本高收益（v0.4.0 未包含）
 - [x] **CI**：已补 `.github/workflows/ci.yml`（ubuntu / windows / macos × Python 3.10 / 3.12
@@ -45,17 +56,26 @@ v0.4.0（2026-11-03）已发布，打包与发布链路也已补上：
 - [ ] #97 清理项：`--keep-video` 走 `os.environ` 传参，应迁到 `Settings` 字段；
       默认模式下 metadata 的 `video_path` 实际指向音频文件（语义不符）；
       web/server/window 三个入口没有 keep-video 的 UI 开关
-- [ ] **SenseVoice 模型下载体验**（源自 #101 建议）：#102 已解决官方 ONNX 模型的加载问题，
-      但仍需用户手填本地路径。可考虑支持直接填 ModelScope 模型名（如
-      `iic/SenseVoiceSmall-onnx`）自动下载并补齐 tokenizer 文件，彻底做到开箱即用
+- [ ] **SenseVoice 模型下载体验**：已转为 issue #115 跟踪；#102 已解决官方 ONNX 模型的加载问题，
+      剩下「从哪拿模型」仍靠手抄文档
 
 ## 🟢 已关闭 / 已修复
 
 - **随 0.4.0 修复**：#100（本地文件入库崩溃）、#101（SenseVoice 官方 ONNX 模型）、
   #105（funasr-onnx 0.4.1 ITN 失效）
-- **#95（Intel Mac）**：torch 2.3+ 停发 macOS x86_64 wheel，wontfix。若 torch 恢复发布可重开
-- **#103（抖音转写）**：not planned。若 yt-dlp 抖音提取器趋稳或需求变多可重评
-- **#63 / #93**：过期/无法复现已关，用户带新日志可重开
+- **2026-11-03 复查结论**（扫描已关闭 issue 的后续线索）：
+  - **#87**（`NoneType` 崩溃）：与 #100 同根因，已在 0.4.0 修复；评论里的 provider/model 问题
+    转成 #112 / #113，并已在原 issue 下评论说明
+  - **#95**（Intel Mac）：临时抽查 PyTorch 2.15.0，仍无 macOS x86_64 wheel，限制依旧；
+    文档/提示缺失转成 #116
+  - **#103**（抖音转写）：yt-dlp 抖音提取器仍有多个 open 问题
+    （[#17826](https://github.com/yt-dlp/yt-dlp/issues/17826)、
+    [#9667](https://github.com/yt-dlp/yt-dlp/issues/9667)、
+    [#17831](https://github.com/yt-dlp/yt-dlp/issues/17831)），继续等上游，不重开
+  - **#63**：指向旧 you-get / `window.py` 代码路径，当前代码已不存在，无后续
+  - **#93**：0.4.0 已在 README / DEVELOPMENT 强调「extras 写同一条命令」，保持关闭
+  - **#72 / #73**（Python 3.13/3.14）：属于 whisper / numba 依赖限制，README 已标注
+    3.10–3.12，保持关闭
 
 ## 🧹 仓库卫生
 
