@@ -50,15 +50,16 @@ def test_bootstrap_sync_only_requires_existing_config(tmp_path) -> None:
     assert "请先运行一次 bootstrap" in result.stderr
 
 
-def test_shell_completion_is_available() -> None:
+def test_shell_completion_is_available(monkeypatch) -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     help_text = _plain(result.stdout)
     assert "--install-completion" in help_text
     assert "--show-completion" in help_text
 
+    # shellingham cannot always detect the parent shell (observed on macOS CI
+    # runners), so pin the detection result and check the generated script.
+    monkeypatch.setattr("typer.completion._get_shell_name", lambda: "bash")
     result = runner.invoke(app, ["--show-completion"])
     assert result.exit_code == 0
-    # The generated script differs per shell (bash/zsh/fish/powershell), so
-    # only assert that a non-empty completion script was produced.
-    assert result.stdout.strip()
+    assert "completion" in _plain(result.stdout)

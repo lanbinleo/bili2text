@@ -7,7 +7,7 @@
 - added GitHub Actions CI: runs the full test suite on ubuntu, windows and macos × Python 3.10 / 3.12, and builds + verifies the wheel / sdist
 - added a release packaging workflow: publishing a GitHub Release automatically builds the wheel / sdist and attaches them to that release; it can also be triggered manually for an existing tag
 - added `scripts/check_dist.py` to verify that artifacts contain the web templates and no local caches; the sdist now excludes `.uv-cache` / `.venv*` directories
-- fixed the shell completion test failing under GitHub Actions because ANSI style spans split option names (assertions now strip ANSI first)
+- fixed two CI flakiness sources in the shell completion test: ANSI style spans splitting option names on GitHub Actions, and unreliable shell detection on macOS runners
 - added a CI status badge to both READMEs
 
 ## 2026-11-03 (v0.4.0)
