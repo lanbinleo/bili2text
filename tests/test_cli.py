@@ -50,4 +50,6 @@ def test_shell_completion_is_available() -> None:
 
     result = runner.invoke(app, ["--show-completion"])
     assert result.exit_code == 0
-    assert "completion" in result.stdout
+    # The generated script differs per shell (bash/zsh/fish/powershell), so
+    # only assert that a non-empty completion script was produced.
+    assert result.stdout.strip()
