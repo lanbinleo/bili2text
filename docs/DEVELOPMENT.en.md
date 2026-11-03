@@ -130,12 +130,21 @@ This refactor branch prefers small, frequent commits:
 - move visual/material assets into `assets/`
 - keep `main.py` and `window.py` as compatibility entrypoints for now
 
+## CI & Releases
+
+- `.github/workflows/ci.yml`: on pushes to main, tags and pull requests, runs
+  `uv run --frozen python -m pytest -q` on ubuntu + windows + macos × Python 3.10 / 3.12,
+  plus a build-and-verify job for the wheel / sdist on ubuntu
+- `.github/workflows/release.yml`: when a GitHub Release is published, builds the wheel / sdist
+  and attaches them to that release; existing tags can be re-uploaded with
+  `gh workflow run release.yml -f tag=v0.4.0`
+- local packaging check: `uv build && python scripts/check_dist.py`
+
 ## Next Steps
 
 Post-release priorities:
 
-1. add CI (GitHub Actions covering at least ubuntu + windows) instead of relying on manual local testing
-2. merge "patch B" from issue #98: send a `Referer` + browser UA with Bilibili requests
-3. take over or close PR #94 (SSE + cookie UI); the branch has been idle since 2026-06-22
-4. keep cleaning up MiMo / `--keep-video` implementation details (see `ROADMAP.md`)
-5. document a more robust Server Mode deployment story
+1. merge "patch B" from issue #98: send a `Referer` + browser UA with Bilibili requests
+2. take over or close PR #94 (SSE + cookie UI); the branch has been idle since 2026-06-22
+3. keep cleaning up MiMo / `--keep-video` implementation details (see `ROADMAP.md`)
+4. document a more robust Server Mode deployment story

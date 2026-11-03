@@ -5,15 +5,17 @@
 
 ## 📦 发版
 
-v0.4.0（2026-11-03）的发布准备已完成：
+v0.4.0（2026-11-03）已发布，打包与发布链路也已补上：
 
 - 版本号同步到 `pyproject.toml`、`src/b2t/__init__.py`、`uv.lock`
 - 双语 CHANGELOG 落日期，并补齐 0.3.0 之后的全部变更
 - README / DEVELOPMENT / API 文档同步
 - 修掉了一个只在 Windows + PowerShell 下失败的工具测试
+- 补上 CI 与发版打包 workflow（见下）
 
 后续发版清单：改三处版本号 → 双语 CHANGELOG 落日期 → `uv lock` → 跑测试 → 打 tag →
-`gh release create`。
+`gh release create`。发布后 `release.yml` 会自动构建 wheel / sdist 并附加到 Release，
+不用再本地打包上传。
 
 历史注意：GitHub 上仍有一个 2023 年的 `sv-1.0.0` release（旧脚本实现），与当前 0.x
 版本线没有继承关系，看版本时以 0.4.0 之后的 tag 为准。
@@ -31,9 +33,9 @@ v0.4.0（2026-11-03）的发布准备已完成：
 
 - [ ] **吸收 #98 评论区的「补丁 B」**：给 B 站请求加 `Referer: https://www.bilibili.com/` +
       浏览器 UA，几行代码，低成本高收益（v0.4.0 未包含）
-- [ ] **CI 完全缺失**：仓库没有任何 GitHub Actions。0.4.0 仍是本地手测发布；应尽快加一个
-      push/PR 跑 `uv run --extra web --extra volcengine --extra mimo pytest` 的 workflow，
-      三个平台里至少覆盖 ubuntu + windows
+- [x] **CI**：已补 `.github/workflows/ci.yml`（ubuntu / windows / macos × Python 3.10 / 3.12
+      跑测试，并构建校验 wheel / sdist）与 `.github/workflows/release.yml`（Release 发布后
+      自动把打包产物附加到 Release）
 - [ ] **#93 的 uv 陷阱**：README 与 DEVELOPMENT 已强调「extras 要写在同一条命令里」（0.4.0），
       还可以考虑在 pyproject 加 `[tool.uv] default-extras = ["web"]`
 - [ ] mimo 清理项：`_build_instruction`/`max_tokens` 是死代码（prompt 不进 API），要么实现要么删；
@@ -60,5 +62,7 @@ v0.4.0（2026-11-03）的发布准备已完成：
 - [x] ~~`.video_agent/` 未跟踪目录~~（2026-11-02 已确认是 video-agent-kit 插件的探测残留，
       已清理）
 - [x] ~~`ROADMAP.md` 只是本地笔记~~（v0.4.0 起纳入仓库维护）
+- [x] ~~sdist 会被本地 `.uv-cache` / `.venv*` 污染~~（已加 hatch 排除规则，并用
+      `scripts/check_dist.py` 在 CI 里校验产物）
 - [ ] 两个大 PR 合并后 uv.lock 已重锁为新格式，后续维护者升级依赖时直接 `uv lock` 即可，
       别再手改

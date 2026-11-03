@@ -1,5 +1,14 @@
 # 更新日志
 
+## 未发布
+
+### 工程与发布
+
+- 新增 GitHub Actions CI：push / PR 时在 ubuntu、windows、macos × Python 3.10 / 3.12 上跑完整测试，并构建、校验 wheel / sdist
+- 新增发版打包 workflow：GitHub Release 发布后自动构建 wheel / sdist 并附加到对应 Release；也可手动指定 tag 触发
+- 新增 `scripts/check_dist.py` 校验打包产物包含 Web 模板且不含本地缓存；sdist 排除 `.uv-cache` / `.venv*` 等目录
+- README 增加 CI 状态徽章
+
 ## 2026-11-03 (v0.4.0)
 
 ### 行为变更

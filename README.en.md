@@ -9,6 +9,7 @@
 </p>
 
 <p align="center">
+  <img src="https://github.com/lanbinleo/bili2text/actions/workflows/ci.yml/badge.svg" alt="CI" />
   <img src="https://img.shields.io/github/stars/lanbinleo/bili2text" alt="GitHub stars" />
   <img src="https://img.shields.io/github/license/lanbinleo/bili2text" alt="License" />
   <img src="https://img.shields.io/github/v/release/lanbinleo/bili2text" alt="Release" />

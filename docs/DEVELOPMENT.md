@@ -132,12 +132,19 @@ uv run pytest -q
 - 项目素材放进 `assets/`
 - 兼容入口暂时保留 `main.py` 和 `window.py`
 
+## CI 与发布
+
+- `.github/workflows/ci.yml`：push 到 main / 打 tag / 提 PR 时，在 ubuntu + windows + macos × Python 3.10 / 3.12 上跑
+  `uv run --frozen python -m pytest -q`，并在 ubuntu 上额外构建、校验 wheel / sdist
+- `.github/workflows/release.yml`：GitHub Release 发布后自动 `uv build` 并把 wheel / sdist 附加到 Release；
+  也可手动补传：`gh workflow run release.yml -f tag=v0.4.0`
+- 本地打包校验：`uv build && python scripts/check_dist.py`
+
 ## 后续建议
 
 发版后的优先顺序建议为：
 
-1. 补上 CI（GitHub Actions，至少覆盖 ubuntu + windows），避免继续靠本地手测
-2. 合入 issue #98 评论区的「补丁 B」：给 B 站请求加 `Referer` + 浏览器 UA
-3. 接手或关闭 PR #94（SSE + Cookie UI），该分支自 2026-06-22 起已停滞
-4. 继续清理 MiMo / `--keep-video` 的实现细节（见 `ROADMAP.md`）
-5. 为 Server Mode 增加更稳定的部署说明
+1. 合入 issue #98 评论区的「补丁 B」：给 B 站请求加 `Referer` + 浏览器 UA
+2. 接手或关闭 PR #94（SSE + Cookie UI），该分支自 2026-06-22 起已停滞
+3. 继续清理 MiMo / `--keep-video` 的实现细节（见 `ROADMAP.md`）
+4. 为 Server Mode 增加更稳定的部署说明
