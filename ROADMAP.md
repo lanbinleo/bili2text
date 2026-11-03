@@ -17,6 +17,9 @@ v0.4.0（2026-11-03）已发布，打包与发布链路也已补上：
 `gh release create`。发布后 `release.yml` 会自动构建 wheel / sdist 并附加到 Release，
 不用再本地打包上传。
 
+**v0.4.1（2026-11-03）**：修复 #112（非 whisper provider 默认 model 串台），并带上 v0.4.0
+之后补的 CI/CD 收尾。
+
 历史注意：GitHub 上仍有一个 2023 年的 `sv-1.0.0` release（旧脚本实现），与当前 0.x
 版本线没有继承关系，看版本时以 0.4.0 之后的 tag 为准。
 
@@ -33,8 +36,6 @@ v0.4.0（2026-11-03）已发布，打包与发布链路也已补上：
 
 ### 已建 issue（2026-11-03 复查遗留问题）
 
-- [ ] **#112 非 whisper provider 默认 model 串台**：volcengine 会收到 `model_name=small`，
-      sensevoice 会把 `small` 当模型目录（源自 #87 后续评论）
 - [ ] **#113 Web / 桌面窗口缺 MiMo 选项**：provider 列表与 CLI 不同步，model 也不随 provider 联动
 - [ ] **#114 下载复用**：已下载过的视频默认跳过，新增强制重下开关（#39 关闭时的承诺）
 - [ ] **#115 SenseVoice 模型自动下载**：支持填 ModelScope 模型名（#101 建议 2）
@@ -61,6 +62,7 @@ v0.4.0（2026-11-03）已发布，打包与发布链路也已补上：
 
 ## 🟢 已关闭 / 已修复
 
+- **随 0.4.1 修复**：#112（非 whisper provider 默认 model 串台，volcengine/sensevoice 均受影响）
 - **随 0.4.0 修复**：#100（本地文件入库崩溃）、#101（SenseVoice 官方 ONNX 模型）、
   #105（funasr-onnx 0.4.1 ITN 失效）
 - **2026-11-03 复查结论**（扫描已关闭 issue 的后续线索）：

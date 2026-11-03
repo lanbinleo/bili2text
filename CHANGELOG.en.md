@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 2026-11-03 (v0.4.1)
+
+### Fixes
+
+- fixed the default model leaking across providers: Volcengine no longer receives whisper's `small` as its model name, and SenseVoice no longer treats `small` as its model directory; both fall back to their own configured defaults (issue #112)
 
 ### Engineering & releases
 

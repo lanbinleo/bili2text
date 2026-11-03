@@ -1,6 +1,10 @@
 # 更新日志
 
-## 未发布
+## 2026-11-03 (v0.4.1)
+
+### 修复
+
+- 修复非 Whisper provider 的默认 model 串台：volcengine 不再把 whisper 的 `small` 当模型名，sensevoice 不再把 `small` 当模型目录，两者都回落到各自的默认配置（issue #112）
 
 ### 工程与发布
 
